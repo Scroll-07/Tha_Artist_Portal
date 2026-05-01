@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin -- Tha Artist Portal</title>
+  <link rel="stylesheet" href="style.css">
+  <style>
+    .admin-container { max-width: 900px; margin: 40px auto; padding: 0 24px; }
+    .admin-login { max-width: 420px; margin: 80px auto; background: #1a1a1a;
+      border: 1px solid #B8860B; border-radius: 12px; padding: 40px; }
+    .pending-card { background: #1a1a1a; border: 1px solid #333;
+      border-left: 4px solid #D4AF37; border-radius: 8px;
+      padding: 20px 24px; margin-bottom: 16px;
+      display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; }
+    .artist-info { flex: 1; }
+    .artist-info h3 { color: #D4AF37; margin-bottom: 4px; }
+    .artist-info p { color: #888; font-size: 0.9rem; }
+    .action-btns { display: flex; gap: 10px; }
+    .approve-btn { padding: 8px 20px; background: #1B5E20; color: #fff;
+      border: none; border-radius: 6px; cursor: pointer; font-weight: bold; }
+    .approve-btn:hover { background: #2E7D32; }
+    .reject-btn { padding: 8px 20px; background: #B71C1C; color: #fff;
+      border: none; border-radius: 6px; cursor: pointer; font-weight: bold; }
+    .reject-btn:hover { background: #C62828; }
+    .badge { display: inline-block; padding: 3px 10px; border-radius: 12px;
+      font-size: 0.78rem; font-weight: bold; margin-left: 8px; }
+    .badge-pending  { background: #7B5900; color: #FFD54F; }
+    .badge-approved { background: #1B5E20; color: #A5D6A7; }
+    .badge-rejected { background: #B71C1C; color: #FFCDD2; }
+    .empty-msg { color: #555; font-style: italic; padding: 24px 0; text-align: center; }
+    .admin-header { display: flex; justify-content: space-between; align-items: center;
+      margin-bottom: 28px; border-bottom: 2px solid #B8860B; padding-bottom: 16px; }
+    .admin-header h2 { color: #D4AF37; }
+  </style>
+</head>
+<body>
+
+
+  <!-- ADMIN LOGIN -->
+  <div id="adminLoginSection" class="admin-login">
+    <h1 class="portal-title" style="margin-bottom:24px">Admin Panel</h1>
+    <input type="password" id="adminKeyInput" placeholder="Enter Admin Key">
+    <button class="gold-btn" onclick="adminLogin()">Enter</button>
+    <p id="adminLoginMsg" class="msg"></p>
+  </div>
+
+
+  <!-- ADMIN DASHBOARD (hidden until login) -->
+  <div id="adminPanel" class="admin-container" style="display:none">
+    <div class="admin-header">
+      <div>
+        <h2>Pending Registrations</h2>
+        <p style="color:#888;font-size:0.9rem">Review and approve or reject artist signups</p>
+      </div>
+      <button class="logout-btn" onclick="adminLogout()">Logout</button>
+    </div>
+    <div id="pendingList"></div>
+  </div>
+
+
+  <script>
+    let adminKey = "";
+
+
+    function adminLogin() {
+      const key = document.getElementById("adminKeyInput").value.trim();
+      if (!key) { document.getElementById("adminLoginMsg").textContent = "Please enter the admin key."; return; }
+      adminKey = key;
+      loadPending();
+    }
+
+
+    function adminLogout() {
+      adminKey = "";
+      document.getElementById("adminPanel").style.display = "none";
+      document.getElementById("adminLoginSection").style.display = "block";
+      document.getElementById("adminKeyInput").value = "";
+    }
+
+
+    async function loadPending() {
+      try {
+        const res  = await fetch("/api/admin/pending", { headers: { "x-admin-key": adminKey } });
+        if (res.status === 403) {
+          document.getElementById("adminLoginMsg").textContent = "Incorrect admin key.";
+          return;
+        }
+        const data = await res.json();
+        document.getElementById("adminLoginSection").style.display = "none";
+        document.getElementById("adminPanel").style.display = "block";
+        const list = document.getElementById("pendingList");
+        if (!data.length) {
+          list.innerHTML = "<p class=empty-msg>No pending registrations right now.</p>";
+          return;
+        }
+        list.innerHTML = data.map(a =>
+          "<div class=pending-card id=card-" + a.Staging_ID + ">" +
+          "<div class=artist-info>" +
+          "<h3>" + a.Artist_Name + " <span class='badge badge-pending'>Pending</span></h3>" +
+          "<p>" + a.Artist_Email + "</p>" +
+          "<p style='color:#555;font-size:0.8rem'>Submitted: " + new Date(a.Submitted_At).toLocaleString() + "</p>" +
+          "</div>" +
+          "<div class=action-btns>" +
+          "<button class=approve-btn onclick='approve(" + a.Staging_ID + ")'>Approve</button>" +
+          "<button class=reject-btn  onclick='reject("  + a.Staging_ID + ")'>Reject</button>" +
+          "</div></div>"
+        ).join("");
+      } catch (e) {
+        document.getElementById("adminLoginMsg").textContent = "Could not connect. Check your internet.";
+      }
+    }
+
+
+    async function approve(id) {
+      if (!confirm("Approve this artist?")) return;
+      const res = await fetch("/api/admin/approve/" + id, {
+        method: "POST", headers: { "x-admin-key": adminKey }
+      });
+      const data = await res.json();
+      if (res.ok) {
+        const card = document.getElementById("card-" + id);
+        card.style.borderLeftColor = "#2E7D32";
+        card.querySelector(".action-btns").innerHTML = "<span class='badge badge-approved'>Approved</span>";
+      } else { alert(data.message); }
+    }
+
+
+    async function reject(id) {
+      const reason = prompt("Reason for rejection (optional):");
+      const res = await fetch("/api/admin/reject/" + id, {
+        method: "POST",
+        headers: { "x-admin-key": adminKey, "Content-Type": "application/json" },
+        body: JSON.stringify({ reason: reason || "No reason given" })
+      });
+      const data = await res.json();
+      if (res.ok) {
+        const card = document.getElementById("card-" + id);
+        card.style.borderLeftColor = "#B71C1C";
+        card.querySelector(".action-btns").innerHTML = "<span class='badge badge-rejected'>Rejected</span>";
+      } else { alert(data.message); }
+    }
+  </script>
+</body>
+</html>
