@@ -7,23 +7,54 @@ function showTab(tab) {
 }
 
 
+// ── Tab switching ────────────────────────────────────────────────
+function showTab(tab, btn) {
+  document.querySelectorAll(".tab-content").forEach(el => el.classList.remove("active"));
+  document.querySelectorAll(".tab-btn").forEach(el => el.classList.remove("active"));
+  document.getElementById(tab).classList.add("active");
+  btn.classList.add("active");
+}
+
 // ── Register ────────────────────────────────────────────────────
 async function registerArtist() {
   const name  = document.getElementById("regName").value.trim();
   const email = document.getElementById("regEmail").value.trim();
   const pass  = document.getElementById("regPass").value;
   const msg   = document.getElementById("regMsg");
-  if (!name || !email || !pass) { msg.textContent = "Please fill in all fields."; return; }
+
+  if (!name || !email || !pass) {
+    msg.style.color = "#f44336";
+    msg.textContent = "Name, email and password are required.";
+    return;
+  }
+
+  const payload = {
+    artistName:   name,
+    email:        email,
+    password:     pass,
+    phone:        document.getElementById("regPhone").value.trim(),
+    city:         document.getElementById("regCity").value.trim(),
+    state:        document.getElementById("regState").value.trim(),
+    genre:        document.getElementById("regGenre").value.trim(),
+    instagram:    document.getElementById("regInstagram").value.trim(),
+    tiktok:       document.getElementById("regTikTok").value.trim(),
+    spotify:      document.getElementById("regSpotify").value.trim(),
+    apple:        document.getElementById("regApple").value.trim(),
+    youtube:      document.getElementById("regYouTube").value.trim()
+  };
+
   try {
     const res  = await fetch("/api/register", {
-      method: "POST",
+      method:  "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ artistName: name, email, password: pass })
+      body:    JSON.stringify(payload)
     });
     const data = await res.json();
     msg.style.color = res.ok ? "#4CAF50" : "#f44336";
     msg.textContent = data.message;
-  } catch { msg.textContent = "Something went wrong. Try again."; }
+  } catch {
+    msg.textContent = "Something went wrong. Try again.";
+  }
 }
 
 

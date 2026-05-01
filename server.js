@@ -46,28 +46,52 @@ function authMiddleware(req, res, next) {
 
 // REGISTER -- sends to staging table first
 app.post("/api/register", async (req, res) => {
-  const { artistName, email, password } = req.body;
+  const { artistName, email, password,
+          phone, city, state, genre,
+          instagram, tiktok, spotify, apple, youtube } = req.body;
+
   if (!artistName || !email || !password)
-    return res.status(400).json({ message: "All fields are required." });
+    return res.status(400).json({ message: "Name, email and password are required." });
+
   try {
     const pool = await getPool();
-    // Check if email already in staging or approved logins
+
     const dupCheck = await pool.request()
       .input("Email", sql.NVarChar, email)
-      .query(`SELECT 1 FROM ArtistLogins WHERE Artist_Email = @Email`,);
+      .query("SELECT 1 FROM ArtistLogins WHERE Artist_Email = @Email");
     if (dupCheck.recordset.length > 0)
       return res.status(409).json({ message: "An account with this email already exists." });
+
     const pendingCheck = await pool.request()
       .input("Email2", sql.NVarChar, email)
       .query("SELECT 1 FROM Artist_Registration_Staging WHERE Artist_Email = @Email2 AND Status = 'Pending'");
     if (pendingCheck.recordset.length > 0)
       return res.status(409).json({ message: "A registration for this email is already pending review." });
+
     const hash = await bcrypt.hash(password, 12);
+
     await pool.request()
-      .input("Name",  sql.NVarChar, artistName)
-      .input("Email", sql.NVarChar, email)
-      .input("Hash",  sql.NVarChar, hash)
-      .query("INSERT INTO Artist_Registration_Staging (Artist_Name, Artist_Email, Password_Hash) VALUES (@Name, @Email, @Hash)");
+      .input("Name",      sql.NVarChar, artistName)
+      .input("Email",     sql.NVarChar, email)
+      .input("Hash",      sql.NVarChar, hash)
+      .input("Phone",     sql.NVarChar, phone     || null)
+      .input("City",      sql.NVarChar, city      || null)
+      .input("State",     sql.NVarChar, state     || null)
+      .input("Genre",     sql.NVarChar, genre     || null)
+      .input("Instagram", sql.NVarChar, instagram || null)
+      .input("TikTok",    sql.NVarChar, tiktok    || null)
+      .input("Spotify",   sql.NVarChar, spotify   || null)
+      .input("Apple",     sql.NVarChar, apple     || null)
+      .input("YouTube",   sql.NVarChar, youtube   || null)
+      .query(`INSERT INTO Artist_Registration_Staging
+        (Artist_Name, Artist_Email, Password_Hash,
+         Artist_Phone, Artist_City, Artist_State, Genre_Name,
+         Instagram_URL, TikTok_URL, Spotify_URL, Apple_URL, YouTube_URL)
+        VALUES
+        (@Name, @Email, @Hash,
+         @Phone, @City, @State, @Genre,
+         @Instagram, @TikTok, @Spotify, @Apple, @YouTube)`);
+
     res.json({ message: "Registration submitted! You will receive access once your account is reviewed." });
   } catch (err) {
     res.status(500).json({ message: "Registration failed.", error: err.message });
@@ -172,27 +196,54 @@ app.post("/api/admin/approve/:id", async (req, res) => {
     const staging = await pool.request()
       .input("ID", sql.Int, req.params.id)
       .query("SELECT * FROM Artist_Registration_Staging WHERE Staging_ID = @ID AND Status = 'Pending'");
+
     if (staging.recordset.length === 0)
       return res.status(404).json({ message: "Record not found or already processed." });
+
     const rec = staging.recordset[0];
-    // Link to Artists table if email matches
-    const artistMatch = await pool.request()
-      .input("Email", sql.NVarChar, rec.Artist_Email)
-      .query("SELECT Artist_ID FROM Artists WHERE Artist_Email = @Email");
-    const artistId = artistMatch.recordset.length > 0 ? artistMatch.recordset[0].Artist_ID : null;
+
+    // Insert into Artists table with all registration fields
+    const artistInsert = await pool.request()
+      .input("Name",      sql.NVarChar, rec.Artist_Name)
+      .input("Email",     sql.NVarChar, rec.Artist_Email)
+      .input("Phone",     sql.NVarChar, rec.Artist_Phone)
+      .input("City",      sql.NVarChar, rec.Artist_City)
+      .input("State",     sql.NVarChar, rec.Artist_State)
+      .input("Instagram", sql.NVarChar, rec.Instagram_URL)
+      .input("TikTok",    sql.NVarChar, rec.TikTok_URL)
+      .input("Spotify",   sql.NVarChar, rec.Spotify_URL)
+      .input("Apple",     sql.NVarChar, rec.Apple_URL)
+      .input("YouTube",   sql.NVarChar, rec.YouTube_URL)
+      .query(`INSERT INTO Artists
+        (Artist_Name, Artist_Email, Artist_Phone_Number,
+         Artist_City, Artist_State,
+         Artist_Instagram_URL, Artist_TikTok_URL,
+         Artist_Spotify_URL, Artist_Apple_URL, Artist_Youtube_URL)
+        VALUES
+        (@Name, @Email, @Phone, @City, @State,
+         @Instagram, @TikTok, @Spotify, @Apple, @YouTube);
+        SELECT SCOPE_IDENTITY() AS Artist_ID;`);
+
+    const newArtistId = artistInsert.recordset[0].Artist_ID;
+
+    // Create login linked to new Artist_ID
     await pool.request()
       .input("Name",     sql.NVarChar, rec.Artist_Name)
       .input("Email",    sql.NVarChar, rec.Artist_Email)
       .input("Hash",     sql.NVarChar, rec.Password_Hash)
-      .input("ArtistID", sql.Int,      artistId)
-      .query("INSERT INTO ArtistLogins (Artist_Name, Artist_Email, Password_Hash, Artist_ID) VALUES (@Name, @Email, @Hash, @ArtistID)");
+      .input("ArtistID", sql.Int,      newArtistId)
+      .query(`INSERT INTO ArtistLogins
+        (Artist_Name, Artist_Email, Password_Hash, Artist_ID)
+        VALUES (@Name, @Email, @Hash, @ArtistID)`);
+
+    // Mark staging as approved
     await pool.request()
       .input("ID", sql.Int, req.params.id)
       .query("UPDATE Artist_Registration_Staging SET Status = 'Approved' WHERE Staging_ID = @ID");
-    res.json({ message: "Artist approved and login created." });
+
+    res.json({ message: "Artist approved -- login and Artists record created." });
   } catch (err) { res.status(500).json({ message: "Approval failed.", error: err.message }); }
 });
-
 
 // ADMIN -- reject a registration
 app.post("/api/admin/reject/:id", async (req, res) => {

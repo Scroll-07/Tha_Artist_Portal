@@ -5,37 +5,50 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Tha Artist Portal</title>
   <link rel="stylesheet" href="style.css">
+  <style>
+    .register-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0 16px; }
+    .full-width { grid-column: 1 / -1; }
+    .section-divider { grid-column: 1 / -1; color: #D4AF37; font-size: 0.8rem;
+      text-transform: uppercase; letter-spacing: 2px; margin: 8px 0 4px;
+      border-bottom: 1px solid #333; padding-bottom: 4px; }
+  </style>
 </head>
 <body>
-  <div class="auth-container">
+  <div class="auth-container" style="max-width:560px">
     <h1 class="portal-title">Tha Artist Portal</h1>
     <p class="portal-sub">Your data. Your leverage.</p>
 
-
     <div class="tabs">
-      <button class="tab-btn active" onclick="showTab('login')">Login</button>
-      <button class="tab-btn" onclick="showTab('register')">Register</button>
+      <button class="tab-btn active" onclick="showTab('login', this)">Login</button>
+      <button class="tab-btn" onclick="showTab('register', this)">Register</button>
     </div>
 
-
-    <!-- LOGIN FORM -->
+    <!-- LOGIN -->
     <div id="login" class="tab-content active">
-      <input type="email" id="loginEmail" placeholder="Email Address">
-      <input type="password" id="loginPass" placeholder="Password">
+      <input type="email"    id="loginEmail" placeholder="Email Address">
+      <input type="password" id="loginPass"  placeholder="Password">
       <button class="gold-btn" onclick="loginArtist()">Login</button>
       <p id="loginMsg" class="msg"></p>
     </div>
 
-
-    <!-- REGISTER FORM -->
+    <!-- REGISTER -->
     <div id="register" class="tab-content">
-      <input type="text"     id="regName"  placeholder="Artist Name">
-      <input type="email"    id="regEmail" placeholder="Email Address">
-      <input type="password" id="regPass"  placeholder="Create a Password">
-      <button class="gold-btn" onclick="registerArtist()">Submit Registration</button>
-      <p id="regMsg" class="msg"></p>
-    </div>
-  </div>
-  <script src="app.js"></script>
-</body>
-</html>
+      <div class="register-grid">
+
+        <p class="section-divider">Account Info</p>
+        <input class="full-width" type="text"     id="regName"  placeholder="Artist Name *">
+        <input class="full-width" type="email"    id="regEmail" placeholder="Email Address *">
+        <input class="full-width" type="password" id="regPass"  placeholder="Create a Password *">
+
+        <p class="section-divider">Contact & Location</p>
+        <input type="text" id="regPhone" placeholder="Phone Number">
+        <input type="text" id="regCity"  placeholder="City">
+        <input class="full-width" type="text" id="regState" placeholder="State">
+        <input class="full-width" type="text" id="regGenre" placeholder="Primary Genre">
+
+        <p class="section-divider">Social & Streaming Links</p>
+        <input type="text" id="regInstagram" placeholder="Instagram URL">
+        <input type="text" id="regTikTok"    placeholder="TikTok URL">
+        <input type="text" id="regSpotify"   placeholder="Spotify URL">
+        <input type="text" id="regApple"     placeholder="Apple Music URL">
+        <input class="full-width" type="text" id="regYouTube"
