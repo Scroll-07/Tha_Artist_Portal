@@ -1,0 +1,92 @@
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { background: #111; color: #eee; font-family: Arial, sans-serif; min-height: 100vh; }
+
+
+/* ── Auth page ── */
+.auth-container {
+  max-width: 440px; margin: 60px auto; padding: 40px;
+  background: #1a1a1a; border: 1px solid #B8860B;
+  border-radius: 12px;
+}
+.portal-title {
+  text-align: center; color: #D4AF37; font-size: 2rem;
+  letter-spacing: 2px; margin-bottom: 6px;
+}
+.portal-title.small { font-size: 1.3rem; }
+.portal-sub { text-align: center; color: #888; margin-bottom: 24px; font-style: italic; }
+.tabs { display: flex; margin-bottom: 24px; border-bottom: 1px solid #B8860B; }
+.tab-btn {
+  flex: 1; padding: 10px; background: none; border: none;
+  color: #888; font-size: 1rem; cursor: pointer;
+}
+.tab-btn.active { color: #D4AF37; border-bottom: 2px solid #D4AF37; }
+.tab-content { display: none; }
+.tab-content.active { display: block; }
+input, textarea {
+  width: 100%; padding: 12px; margin-bottom: 14px;
+  background: #222; border: 1px solid #444; border-radius: 6px;
+  color: #eee; font-size: 1rem;
+}
+input:focus { outline: none; border-color: #D4AF37; }
+.gold-btn {
+  width: 100%; padding: 12px; background: #B8860B;
+  color: #000; font-weight: bold; font-size: 1rem;
+  border: none; border-radius: 6px; cursor: pointer; letter-spacing: 1px;
+}
+.gold-btn:hover { background: #D4AF37; }
+.msg { margin-top: 12px; text-align: center; font-size: 0.9rem; }
+
+
+/* ── Dashboard ── */
+.dashboard-body { background: #111; }
+.dash-header {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 20px 32px; background: #1a1a1a;
+  border-bottom: 2px solid #B8860B;
+}
+.welcome-text { color: #D4AF37; font-size: 0.95rem; margin-top: 4px; }
+.logout-btn {
+  padding: 8px 20px; background: transparent;
+  border: 1px solid #B8860B; color: #D4AF37;
+  border-radius: 6px; cursor: pointer;
+}
+.logout-btn:hover { background: #B8860B; color: #000; }
+.dash-main { max-width: 1100px; margin: 0 auto; padding: 32px 24px; }
+.dash-section { margin-bottom: 48px; }
+.section-title {
+  font-size: 1.2rem; color: #D4AF37; margin-bottom: 16px;
+  border-bottom: 1px solid #333; padding-bottom: 8px;
+}
+
+
+/* ── Stream cards ── */
+.cards-row { display: flex; flex-wrap: wrap; gap: 16px; }
+.stat-card {
+  background: #1a1a1a; border: 1px solid #B8860B;
+  border-radius: 10px; padding: 24px 32px; text-align: center; min-width: 160px;
+}
+.platform { color: #888; font-size: 0.85rem; margin-bottom: 8px; text-transform: uppercase; }
+.stream-count { color: #D4AF37; font-size: 2rem; font-weight: bold; }
+.stream-label { color: #666; font-size: 0.75rem; margin-top: 4px; }
+
+
+/* ── Tables ── */
+.table-wrap { overflow-x: auto; }
+table { width: 100%; border-collapse: collapse; }
+th { background: #1a1a1a; color: #D4AF37; padding: 12px 16px; text-align: left; border-bottom: 2px solid #B8860B; }
+td { padding: 11px 16px; border-bottom: 1px solid #222; color: #ccc; }
+tr:hover td { background: #1a1a1a; }
+.amount { color: #4CAF50; font-weight: bold; }
+.no-data { color: #555; font-style: italic; padding: 16px 0; }
+
+
+/* ── Contract cards ── */
+.contract-card {
+  background: #1a1a1a; border: 1px solid #333;
+  border-left: 4px solid #D4AF37;
+  border-radius: 8px; padding: 20px 24px; margin-bottom: 16px;
+}
+.contract-label { color: #D4AF37; font-size: 1.1rem; font-weight: bold; }
+.contract-deal { color: #aaa; margin: 4px 0 8px; }
+.contract-splits { color: #eee; font-size: 0.95rem; margin-bottom: 6px; }
+.contract-dates { color: #666; font-size: 0.85rem; }

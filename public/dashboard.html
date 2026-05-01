@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>My Dashboard -- Tha Artist Portal</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body class="dashboard-body">
+
+
+  <header class="dash-header">
+    <div>
+      <h1 class="portal-title small">Tha Artist Portal</h1>
+      <p id="welcomeMsg" class="welcome-text">Loading...</p>
+    </div>
+    <button class="logout-btn" onclick="logout()">Logout</button>
+  </header>
+
+
+  <main class="dash-main">
+
+
+    <!-- STREAMS -->
+    <section class="dash-section">
+      <h2 class="section-title">Streams by Platform</h2>
+      <div id="streamsContainer" class="cards-row"></div>
+    </section>
+
+
+    <!-- ROYALTIES -->
+    <section class="dash-section">
+      <h2 class="section-title">Royalty Payments</h2>
+      <div class="table-wrap">
+        <table id="royaltiesTable">
+          <thead><tr>
+            <th>Platform</th><th>Label</th>
+            <th>Amount</th><th>Date</th><th>Status</th>
+          </tr></thead>
+          <tbody id="royaltiesBody"></tbody>
+        </table>
+      </div>
+    </section>
+
+
+    <!-- SONGS -->
+    <section class="dash-section">
+      <h2 class="section-title">Song Catalog</h2>
+      <div class="table-wrap">
+        <table id="songsTable">
+          <thead><tr>
+            <th>Song</th><th>Album</th>
+            <th>Released</th><th>Duration</th><th>ISRC</th>
+          </tr></thead>
+          <tbody id="songsBody"></tbody>
+        </table>
+      </div>
+    </section>
+
+
+    <!-- CONTRACTS -->
+    <section class="dash-section">
+      <h2 class="section-title">Contract Summary</h2>
+      <div id="contractsContainer" class="cards-row"></div>
+    </section>
+
+
+  </main>
+  <script src="app.js"></script>
+</body>
+</html>

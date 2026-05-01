@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Tha Artist Portal</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="auth-container">
+    <h1 class="portal-title">Tha Artist Portal</h1>
+    <p class="portal-sub">Your data. Your leverage.</p>
+
+
+    <div class="tabs">
+      <button class="tab-btn active" onclick="showTab('login')">Login</button>
+      <button class="tab-btn" onclick="showTab('register')">Register</button>
+    </div>
+
+
+    <!-- LOGIN FORM -->
+    <div id="login" class="tab-content active">
+      <input type="email" id="loginEmail" placeholder="Email Address">
+      <input type="password" id="loginPass" placeholder="Password">
+      <button class="gold-btn" onclick="loginArtist()">Login</button>
+      <p id="loginMsg" class="msg"></p>
+    </div>
+
+
+    <!-- REGISTER FORM -->
+    <div id="register" class="tab-content">
+      <input type="text"     id="regName"  placeholder="Artist Name">
+      <input type="email"    id="regEmail" placeholder="Email Address">
+      <input type="password" id="regPass"  placeholder="Create a Password">
+      <button class="gold-btn" onclick="registerArtist()">Submit Registration</button>
+      <p id="regMsg" class="msg"></p>
+    </div>
+  </div>
+  <script src="app.js"></script>
+</body>
+</html>
