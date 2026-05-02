@@ -218,3 +218,11 @@ async function saveProfile() {
 
 // Auto-run when on dashboard page
 if (document.getElementById("welcomeMsg")) loadDashboard();
+
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('/sw.js')
+      .then(() => console.log('TAP service worker registered'))
+      .catch(err => console.log('SW error:', err));
+  });
+}
