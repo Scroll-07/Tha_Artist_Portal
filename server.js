@@ -264,5 +264,65 @@ app.post("/api/admin/reject/:id", async (req, res) => {
   } catch (err) { res.status(500).json({ message: "Rejection failed.", error: err.message }); }
 });
 
+// GET artist profile
+app.get("/api/profile", authMiddleware, async (req, res) => {
+  try {
+    const pool   = await getPool();
+    const result = await pool.request()
+      .input("ArtistID", sql.Int, req.artist.artistId)
+      .query("SELECT * FROM Artists WHERE Artist_ID = @ArtistID");
+    if (result.recordset.length === 0)
+      return res.status(404).json({ message: "Profile not found." });
+    res.json(result.recordset[0]);
+  } catch (err) {
+    res.status(500).json({ message: "Error loading profile.", error: err.message });
+  }
+});
+
+// UPDATE artist profile
+app.put("/api/profile", authMiddleware, async (req, res) => {
+  const { artistName, email, phone, city, state, genre,
+          instagram, tiktok, spotify, apple, youtube } = req.body;
+  try {
+    const pool = await getPool();
+    await pool.request()
+      .input("ArtistID",  sql.Int,      req.artist.artistId)
+      .input("Name",      sql.NVarChar, artistName)
+      .input("Email",     sql.NVarChar, email)
+      .input("Phone",     sql.NVarChar, phone     || null)
+      .input("City",      sql.NVarChar, city      || null)
+      .input("State",     sql.NVarChar, state     || null)
+      .input("Instagram", sql.NVarChar, instagram || null)
+      .input("TikTok",    sql.NVarChar, tiktok    || null)
+      .input("Spotify",   sql.NVarChar, spotify   || null)
+      .input("Apple",     sql.NVarChar, apple     || null)
+      .input("YouTube",   sql.NVarChar, youtube   || null)
+      .query(`UPDATE Artists SET
+        Artist_Name            = @Name,
+        Artist_Email           = @Email,
+        Artist_Phone_Number    = @Phone,
+        Artist_City            = @City,
+        Artist_State           = @State,
+        Artist_Instagram_URL   = @Instagram,
+        Artist_TikTok_URL      = @TikTok,
+        Artist_Spotify_URL     = @Spotify,
+        Artist_Apple_URL       = @Apple,
+        Artist_Youtube_URL     = @YouTube
+        WHERE Artist_ID        = @ArtistID`);
+
+    // Also update name and email in ArtistLogins
+    await pool.request()
+      .input("ArtistID", sql.Int,      req.artist.artistId)
+      .input("Name",     sql.NVarChar, artistName)
+      .input("Email",    sql.NVarChar, email)
+      .query("UPDATE ArtistLogins SET Artist_Name = @Name, Artist_Email = @Email WHERE Artist_ID = @ArtistID");
+
+    res.json({ message: "Profile updated successfully!" });
+  } catch (err) {
+    res.status(500).json({ message: "Update failed.", error: err.message });
+  }
+});
+
+
 
 app.listen(PORT, () => console.log("Server running on port " + PORT));

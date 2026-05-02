@@ -90,3 +90,37 @@ tr:hover td { background: #1a1a1a; }
 .contract-deal { color: #aaa; margin: 4px 0 8px; }
 .contract-splits { color: #eee; font-size: 0.95rem; margin-bottom: 6px; }
 .contract-dates { color: #666; font-size: 0.85rem; }
+
+/* ── Profile Modal ── */
+.modal-overlay {
+  display: none; position: fixed; top: 0; left: 0;
+  width: 100%; height: 100%; background: rgba(0,0,0,0.85);
+  z-index: 1000; overflow-y: auto;
+}
+.modal-overlay.active { display: block; }
+.modal-box {
+  max-width: 580px; margin: 40px auto; background: #1a1a1a;
+  border: 1px solid #B8860B; border-radius: 12px; padding: 36px;
+}
+.modal-box h2 { color: #D4AF37; margin-bottom: 20px; }
+.modal-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0 16px; }
+.modal-grid .full-width { grid-column: 1 / -1; }
+.modal-divider {
+  grid-column: 1 / -1; color: #D4AF37; font-size: 0.8rem;
+  text-transform: uppercase; letter-spacing: 2px;
+  margin: 10px 0 4px; border-bottom: 1px solid #333; padding-bottom: 4px;
+}
+.modal-actions { display: flex; gap: 12px; margin-top: 20px; }
+.modal-actions .gold-btn { flex: 1; }
+.cancel-btn {
+  flex: 1; padding: 12px; background: transparent;
+  border: 1px solid #555; color: #888; border-radius: 6px;
+  cursor: pointer; font-size: 1rem;
+}
+.cancel-btn:hover { border-color: #B8860B; color: #D4AF37; }
+.update-profile-btn {
+  padding: 10px 24px; background: transparent;
+  border: 1px solid #B8860B; color: #D4AF37;
+  border-radius: 6px; cursor: pointer; font-size: 0.95rem;
+}
+.update-profile-btn:hover { background: #B8860B; color: #000; }

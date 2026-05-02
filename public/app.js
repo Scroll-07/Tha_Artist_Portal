@@ -152,6 +152,69 @@ function renderContracts(data) {
   ).join("");
 }
 
+// ── Profile Modal ────────────────────────────────────────────────
+async function openProfileModal() {
+  // Load current data into fields
+  const token = localStorage.getItem("artistToken");
+  try {
+    const res  = await fetch("/api/profile", {
+      headers: { "Authorization": token }
+    });
+    const data = await res.json();
+    document.getElementById("updName").value      = data.Artist_Name      || "";
+    document.getElementById("updEmail").value     = data.Artist_Email     || "";
+    document.getElementById("updPhone").value     = data.Artist_Phone_Number || "";
+    document.getElementById("updCity").value      = data.Artist_City      || "";
+    document.getElementById("updState").value     = data.Artist_State     || "";
+    document.getElementById("updGenre").value     = data.Genre            || "";
+    document.getElementById("updInstagram").value = data.Artist_Instagram_URL || "";
+    document.getElementById("updTikTok").value    = data.Artist_TikTok_URL    || "";
+    document.getElementById("updSpotify").value   = data.Artist_Spotify_URL   || "";
+    document.getElementById("updApple").value     = data.Artist_Apple_URL     || "";
+    document.getElementById("updYouTube").value   = data.Artist_Youtube_URL   || "";
+  } catch { }
+  document.getElementById("profileModal").classList.add("active");
+}
+
+function closeProfileModal() {
+  document.getElementById("profileModal").classList.remove("active");
+  document.getElementById("updMsg").textContent = "";
+}
+
+async function saveProfile() {
+  const token = localStorage.getItem("artistToken");
+  const msg   = document.getElementById("updMsg");
+  const payload = {
+    artistName: document.getElementById("updName").value.trim(),
+    email:      document.getElementById("updEmail").value.trim(),
+    phone:      document.getElementById("updPhone").value.trim(),
+    city:       document.getElementById("updCity").value.trim(),
+    state:      document.getElementById("updState").value.trim(),
+    genre:      document.getElementById("updGenre").value.trim(),
+    instagram:  document.getElementById("updInstagram").value.trim(),
+    tiktok:     document.getElementById("updTikTok").value.trim(),
+    spotify:    document.getElementById("updSpotify").value.trim(),
+    apple:      document.getElementById("updApple").value.trim(),
+    youtube:    document.getElementById("updYouTube").value.trim()
+  };
+  try {
+    const res  = await fetch("/api/profile", {
+      method:  "PUT",
+      headers: { "Authorization": token, "Content-Type": "application/json" },
+      body:    JSON.stringify(payload)
+    });
+    const data = await res.json();
+    msg.style.color = res.ok ? "#4CAF50" : "#f44336";
+    msg.textContent = data.message;
+    if (res.ok) {
+      localStorage.setItem("artistName", payload.artistName);
+      document.getElementById("welcomeMsg").textContent = "Welcome back, " + payload.artistName;
+      setTimeout(closeProfileModal, 1500);
+    }
+  } catch {
+    msg.textContent = "Something went wrong. Try again.";
+  }
+}
 
 // Auto-run when on dashboard page
 if (document.getElementById("welcomeMsg")) loadDashboard();

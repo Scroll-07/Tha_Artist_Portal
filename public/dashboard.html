@@ -14,8 +14,8 @@
       <h1 class="portal-title small">Tha Artist Portal</h1>
       <p id="welcomeMsg" class="welcome-text">Loading...</p>
     </div>
-    <button class="logout-btn" onclick="logout()">Logout</button>
-  </header>
+    <button class="update-profile-btn" onclick="openProfileModal()">Update Profile</button>
+    <button class="logout-btn" onclick="logout()">Logout</button>  </header>
 
 
   <main class="dash-main">
@@ -66,6 +66,41 @@
 
 
   </main>
+
+  <!-- PROFILE MODAL -->
+<div id="profileModal" class="modal-overlay">
+  <div class="modal-box">
+    <h2>Update Your Profile</h2>
+    <div class="modal-grid">
+
+      <p class="modal-divider">Account Info</p>
+      <input class="full-width" type="text"  id="updName"  placeholder="Artist Name">
+      <input class="full-width" type="email" id="updEmail" placeholder="Email Address">
+
+      <p class="modal-divider">Contact & Location</p>
+      <input type="text" id="updPhone" placeholder="Phone Number">
+      <input type="text" id="updCity"  placeholder="City">
+      <input class="full-width" type="text" id="updState" placeholder="State">
+      <input class="full-width" type="text" id="updGenre" placeholder="Primary Genre">
+
+      <p class="modal-divider">Social & Streaming Links</p>
+      <input type="text" id="updInstagram" placeholder="Instagram URL">
+      <input type="text" id="updTikTok"    placeholder="TikTok URL">
+      <input type="text" id="updSpotify"   placeholder="Spotify URL">
+      <input type="text" id="updApple"     placeholder="Apple Music URL">
+      <input class="full-width" type="text" id="updYouTube" placeholder="YouTube URL">
+
+    </div>
+    <p id="updMsg" class="msg" style="margin-top:12px"></p>
+    <div class="modal-actions">
+      <button class="cancel-btn" onclick="closeProfileModal()">Cancel</button>
+      <button class="gold-btn" onclick="saveProfile()">Save Changes</button>
+    </div>
+  </div>
+</div>
+
+<script src="app.js"></script>
+
   <script src="app.js"></script>
 </body>
 </html>
