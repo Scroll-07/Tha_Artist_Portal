@@ -3,7 +3,7 @@ function showTab(tab) {
   document.querySelectorAll(".tab-content").forEach(el => el.classList.remove("active"));
   document.querySelectorAll(".tab-btn").forEach(el => el.classList.remove("active"));
   document.getElementById(tab).classList.add("active");
-  event.target.classList.add("active");
+  document.querySelector('[onclick="showTab(\'' + tab + '\')"]').classList.add("active");
 }
 
 
