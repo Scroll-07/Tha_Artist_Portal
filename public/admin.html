@@ -111,19 +111,25 @@
       }
     }
 
-
-    async function approve(id) {
-      if (!confirm("Approve this artist?")) return;
-      const res = await fetch("/api/admin/approve/" + id, {
-        method: "POST", headers: { "x-admin-key": adminKey }
-      });
-      const data = await res.json();
-      if (res.ok) {
-        const card = document.getElementById("card-" + id);
-        card.style.borderLeftColor = "#2E7D32";
-        card.querySelector(".action-btns").innerHTML = "<span class='badge badge-approved'>Approved</span>";
-      } else { alert(data.message); }
-    }
+async function approve(id) {
+  if (!confirm("Approve this artist?")) return;
+  const btn = document.querySelector(`#card-${id} .approve-btn`);
+  btn.disabled = true;
+  btn.textContent = "Processing...";
+  const res = await fetch("/api/admin/approve/" + id, {
+    method: "POST", headers: { "x-admin-key": adminKey }
+  });
+  const data = await res.json();
+  if (res.ok) {
+    const card = document.getElementById("card-" + id);
+    card.style.borderLeftColor = "#2E7D32";
+    card.querySelector(".action-btns").innerHTML = "<span class='badge badge-approved'>Approved</span>";
+  } else { 
+    btn.disabled = false;
+    btn.textContent = "Approve";
+    alert(data.message); 
+  }
+}
 
 
     async function reject(id) {
