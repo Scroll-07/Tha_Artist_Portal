@@ -236,13 +236,16 @@ app.post("/api/admin/approve/:id", async (req, res) => {
         (Artist_Name, Artist_Email, Password_Hash, Artist_ID)
         VALUES (@Name, @Email, @Hash, @ArtistID)`);
 
-    // Mark staging as approved
+// Mark staging as approved
     await pool.request()
       .input("ID", sql.Int, req.params.id)
       .query("UPDATE Artist_Registration_Staging SET Status = 'Approved' WHERE Staging_ID = @ID");
 
     res.json({ message: "Artist approved -- login and Artists record created." });
-  } catch (err) { res.status(500).json({ message: "Approval failed.", error: err.message }); }
+  } catch (err) { 
+    console.error("APPROVE ERROR:", err.message);
+    res.status(500).json({ message: "Approval failed.", error: err.message }); 
+  }
 });
 
 // ADMIN -- reject a registration
