@@ -323,6 +323,211 @@ app.put("/api/profile", authMiddleware, async (req, res) => {
   }
 });
 
+// ── ARTIST -- Add a song ────────────────────────────────────────
+app.post("/api/songs", authMiddleware, async (req, res) => {
+  const { songName, album, releaseDate, duration, isrc,
+          featuredArtist, writersCredit, producerName } = req.body;
+  try {
+    const pool = await getPool();
+    await pool.request()
+      .input("ArtistID",       sql.Int,      req.artist.artistId)
+      .input("SongName",       sql.NVarChar, songName)
+      .input("Album",          sql.NVarChar, album        || null)
+      .input("ReleaseDate",    sql.Date,     releaseDate  || null)
+      .input("Duration",       sql.NVarChar, duration     || null)
+      .input("ISRC",           sql.NVarChar, isrc         || null)
+      .input("Featured",       sql.NVarChar, featuredArtist || null)
+      .input("Writers",        sql.NVarChar, writersCredit  || null)
+      .input("Producer",       sql.NVarChar, producerName   || null)
+      .query(`INSERT INTO Songs
+        (Artist_ID, Song_Name, Album, Release_Date,
+         Duration_of_Song, ISRC, Featured_Artist,
+         Writers_Credit, Producer_Name)
+        VALUES
+        (@ArtistID, @SongName, @Album, @ReleaseDate,
+         @Duration, @ISRC, @Featured, @Writers, @Producer)`);
+    res.json({ message: "Song added successfully!" });
+  } catch (err) {
+    res.status(500).json({ message: "Error adding song.", error: err.message });
+  }
+});
 
+// ── ARTIST -- Update a song ─────────────────────────────────────
+app.put("/api/songs/:id", authMiddleware, async (req, res) => {
+  const { songName, album, releaseDate, duration, isrc,
+          featuredArtist, writersCredit, producerName } = req.body;
+  try {
+    const pool = await getPool();
+    await pool.request()
+      .input("SongID",         sql.Int,      req.params.id)
+      .input("ArtistID",       sql.Int,      req.artist.artistId)
+      .input("SongName",       sql.NVarChar, songName)
+      .input("Album",          sql.NVarChar, album          || null)
+      .input("ReleaseDate",    sql.Date,     releaseDate    || null)
+      .input("Duration",       sql.NVarChar, duration       || null)
+      .input("ISRC",           sql.NVarChar, isrc           || null)
+      .input("Featured",       sql.NVarChar, featuredArtist || null)
+      .input("Writers",        sql.NVarChar, writersCredit  || null)
+      .input("Producer",       sql.NVarChar, producerName   || null)
+      .query(`UPDATE Songs SET
+        Song_Name       = @SongName,
+        Album           = @Album,
+        Release_Date    = @ReleaseDate,
+        Duration_of_Song = @Duration,
+        ISRC            = @ISRC,
+        Featured_Artist = @Featured,
+        Writers_Credit  = @Writers,
+        Producer_Name   = @Producer
+        WHERE Song_ID   = @SongID
+        AND   Artist_ID = @ArtistID`);
+    res.json({ message: "Song updated successfully!" });
+  } catch (err) {
+    res.status(500).json({ message: "Error updating song.", error: err.message });
+  }
+});
+
+// ── ARTIST -- Delete a song ─────────────────────────────────────
+app.delete("/api/songs/:id", authMiddleware, async (req, res) => {
+  try {
+    const pool = await getPool();
+    await pool.request()
+      .input("SongID",   sql.Int, req.params.id)
+      .input("ArtistID", sql.Int, req.artist.artistId)
+      .query("DELETE FROM Songs WHERE Song_ID = @SongID AND Artist_ID = @ArtistID");
+    res.json({ message: "Song deleted." });
+  } catch (err) {
+    res.status(500).json({ message: "Error deleting song.", error: err.message });
+  }
+});
+
+// ── ADMIN -- Get all artists (for dropdowns) ────────────────────
+app.get("/api/admin/artists", async (req, res) => {
+  const adminKey = req.headers["x-admin-key"];
+  if (adminKey !== process.env.JWT_SECRET)
+    return res.status(403).json({ message: "Not authorized." });
+  try {
+    const pool   = await getPool();
+    const result = await pool.request()
+      .query("SELECT Artist_ID, Artist_Name FROM Artists ORDER BY Artist_Name ASC");
+    res.json(result.recordset);
+  } catch (err) {
+    res.status(500).json({ message: "Error.", error: err.message });
+  }
+});
+
+// ── ADMIN -- Add a song for any artist ─────────────────────────
+app.post("/api/admin/songs", async (req, res) => {
+  const adminKey = req.headers["x-admin-key"];
+  if (adminKey !== process.env.JWT_SECRET)
+    return res.status(403).json({ message: "Not authorized." });
+  const { artistId, songName, album, releaseDate, duration,
+          isrc, featuredArtist, writersCredit, producerName } = req.body;
+  try {
+    const pool = await getPool();
+    await pool.request()
+      .input("ArtistID",    sql.Int,      artistId)
+      .input("SongName",    sql.NVarChar, songName)
+      .input("Album",       sql.NVarChar, album          || null)
+      .input("ReleaseDate", sql.Date,     releaseDate    || null)
+      .input("Duration",    sql.NVarChar, duration       || null)
+      .input("ISRC",        sql.NVarChar, isrc           || null)
+      .input("Featured",    sql.NVarChar, featuredArtist || null)
+      .input("Writers",     sql.NVarChar, writersCredit  || null)
+      .input("Producer",    sql.NVarChar, producerName   || null)
+      .query(`INSERT INTO Songs
+        (Artist_ID, Song_Name, Album, Release_Date,
+         Duration_of_Song, ISRC, Featured_Artist,
+         Writers_Credit, Producer_Name)
+        VALUES
+        (@ArtistID, @SongName, @Album, @ReleaseDate,
+         @Duration, @ISRC, @Featured, @Writers, @Producer)`);
+    res.json({ message: "Song added successfully!" });
+  } catch (err) {
+    res.status(500).json({ message: "Error adding song.", error: err.message });
+  }
+});
+
+// ── ADMIN -- Add stream data ────────────────────────────────────
+app.post("/api/admin/streams", async (req, res) => {
+  const adminKey = req.headers["x-admin-key"];
+  if (adminKey !== process.env.JWT_SECRET)
+    return res.status(403).json({ message: "Not authorized." });
+  const { artistId, songId, platform, streamCount, dateRecorded } = req.body;
+  try {
+    const pool = await getPool();
+    await pool.request()
+      .input("ArtistID",     sql.Int,      artistId)
+      .input("SongID",       sql.Int,      songId       || null)
+      .input("Platform",     sql.NVarChar, platform)
+      .input("StreamCount",  sql.Int,      streamCount)
+      .input("DateRecorded", sql.Date,     dateRecorded || null)
+      .query(`INSERT INTO Streams
+        (Artist_ID, Song_ID, Streaming_Platform, Stream_Count, Date_Recorded)
+        VALUES
+        (@ArtistID, @SongID, @Platform, @StreamCount, @DateRecorded)`);
+    res.json({ message: "Stream data added!" });
+  } catch (err) {
+    res.status(500).json({ message: "Error adding streams.", error: err.message });
+  }
+});
+
+// ── ADMIN -- Add royalty payment ────────────────────────────────
+app.post("/api/admin/royalties", async (req, res) => {
+  const adminKey = req.headers["x-admin-key"];
+  if (adminKey !== process.env.JWT_SECRET)
+    return res.status(403).json({ message: "Not authorized." });
+  const { artistId, platform, labelName, amount, paymentDate, status } = req.body;
+  try {
+    const pool = await getPool();
+    await pool.request()
+      .input("ArtistID",    sql.Int,      artistId)
+      .input("Platform",    sql.NVarChar, platform    || null)
+      .input("Label",       sql.NVarChar, labelName   || null)
+      .input("Amount",      sql.Decimal,  amount)
+      .input("PaymentDate", sql.Date,     paymentDate || null)
+      .input("Status",      sql.NVarChar, status      || "Pending")
+      .query(`INSERT INTO Royalties
+        (Artist_ID, Streaming_Platform, Label_Name, Amount, Payment_Date, Status_On_Royaltiy)
+        VALUES
+        (@ArtistID, @Platform, @Label, @Amount, @PaymentDate, @Status)`);
+    res.json({ message: "Royalty payment added!" });
+  } catch (err) {
+    res.status(500).json({ message: "Error adding royalty.", error: err.message });
+  }
+});
+
+// ── ADMIN -- Add contract ───────────────────────────────────────
+app.post("/api/admin/contracts", async (req, res) => {
+  const adminKey = req.headers["x-admin-key"];
+  if (adminKey !== process.env.JWT_SECRET)
+    return res.status(403).json({ message: "Not authorized." });
+  const { artistId, labelName, dealType, artistPct, managerPct,
+          labelPct, artistLawyer, managerLawyer, startDate, endDate } = req.body;
+  try {
+    const pool = await getPool();
+    await pool.request()
+      .input("ArtistID",       sql.Int,      artistId)
+      .input("Label",          sql.NVarChar, labelName      || null)
+      .input("DealType",       sql.NVarChar, dealType       || null)
+      .input("ArtistPct",      sql.Decimal,  artistPct      || 0)
+      .input("ManagerPct",     sql.Decimal,  managerPct     || 0)
+      .input("LabelPct",       sql.Decimal,  labelPct       || 0)
+      .input("ArtistLawyer",   sql.NVarChar, artistLawyer   || null)
+      .input("ManagerLawyer",  sql.NVarChar, managerLawyer  || null)
+      .input("StartDate",      sql.Date,     startDate      || null)
+      .input("EndDate",        sql.Date,     endDate        || null)
+      .query(`INSERT INTO Contracts
+        (Artist_ID, Label_Name, Deal_Type,
+         Ownership_Percent_Artist, Ownership_Percent_Manager, Ownership_Percent_Label,
+         Artist_Lawyer, Manager_Lawyer, Contract_Start_Date, Contract_End_Date)
+        VALUES
+        (@ArtistID, @Label, @DealType,
+         @ArtistPct, @ManagerPct, @LabelPct,
+         @ArtistLawyer, @ManagerLawyer, @StartDate, @EndDate)`);
+    res.json({ message: "Contract added!" });
+  } catch (err) {
+    res.status(500).json({ message: "Error adding contract.", error: err.message });
+  }
+});
 
 app.listen(PORT, () => console.log("Server running on port " + PORT));

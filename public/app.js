@@ -124,11 +124,26 @@ function renderRoyalties(data) {
 
 function renderSongs(data) {
   const tb = document.getElementById("songsBody");
-  if (!data.length) { tb.innerHTML = "<tr><td colspan=5 class=no-data>No songs yet.</td></tr>"; return; }
+  if (!data.length) {
+    tb.innerHTML = "<tr><td colspan=6 class=no-data>No songs yet. Add your first song below!</td></tr>";
+    return;
+  }
   tb.innerHTML = data.map(s =>
-    "<tr><td>" + (s.Song_Name||"-") + "</td><td>" + (s.Album||"-") + "</td>" +
+    "<tr>" +
+    "<td>" + (s.Song_Name||"-") + "</td>" +
+    "<td>" + (s.Album||"-") + "</td>" +
     "<td>" + (s.Release_Date ? new Date(s.Release_Date).toLocaleDateString() : "-") + "</td>" +
-    "<td>" + (s.Duration_of_Song||"-") + "</td><td>" + (s.ISRC||"-") + "</td></tr>"
+    "<td>" + (s.Duration_of_Song||"-") + "</td>" +
+    "<td>" + (s.ISRC||"-") + "</td>" +
+    "<td>" +
+    "<button class='edit-btn' onclick='editSong(" +
+      s.Song_ID + ",\"" + (s.Song_Name||"") + "\",\"" + (s.Album||"") + "\"," +
+      "\"" + (s.Release_Date||"") + "\",\"" + (s.Duration_of_Song||"") + "\"," +
+      "\"" + (s.ISRC||"") + "\",\"" + (s.Featured_Artist||"") + "\"," +
+      "\"" + (s.Writers_Credit||"") + "\",\"" + (s.Producer_Name||"") + "\"" +
+    ")'>Edit</button> " +
+    "<button class='delete-btn' onclick='deleteSong(" + s.Song_ID + ")'>Delete</button>" +
+    "</td></tr>"
   ).join("");
 }
 
@@ -215,6 +230,93 @@ async function saveProfile() {
     msg.textContent = "Something went wrong. Try again.";
   }
 }
+
+// ── Song Section ─────────────────────────────────────────────────
+function toggleSongForm() {
+  const section = document.getElementById("addSongSection");
+  section.style.display = section.style.display === "none" ? "block" : "none";
+}
+
+function clearSongForm() {
+  ["newSongName","newAlbum","newReleaseDate","newDuration",
+   "newISRC","newFeatured","newWriters","newProducer"]
+  .forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.value = "";
+  });
+  document.getElementById("editingSongId").value = "";
+  document.getElementById("songFormTitle").textContent = "Add New Song";
+  document.getElementById("songSubmitBtn").textContent = "Add Song";
+}
+
+function editSong(id, name, album, releaseDate, duration,
+                  isrc, featured, writers, producer) {
+  document.getElementById("editingSongId").value  = id;
+  document.getElementById("newSongName").value    = name      || "";
+  document.getElementById("newAlbum").value       = album     || "";
+  document.getElementById("newReleaseDate").value = releaseDate ? releaseDate.split("T")[0] : "";
+  document.getElementById("newDuration").value    = duration  || "";
+  document.getElementById("newISRC").value        = isrc      || "";
+  document.getElementById("newFeatured").value    = featured  || "";
+  document.getElementById("newWriters").value     = writers   || "";
+  document.getElementById("newProducer").value    = producer  || "";
+  document.getElementById("songFormTitle").textContent  = "Edit Song";
+  document.getElementById("songSubmitBtn").textContent  = "Save Changes";
+  document.getElementById("addSongSection").style.display = "block";
+  document.getElementById("addSongSection").scrollIntoView({ behavior: "smooth" });
+}
+
+async function submitSong() {
+  const token    = localStorage.getItem("artistToken");
+  const editingId = document.getElementById("editingSongId").value;
+  const msg      = document.getElementById("songMsg");
+  const payload  = {
+    songName:      document.getElementById("newSongName").value.trim(),
+    album:         document.getElementById("newAlbum").value.trim(),
+    releaseDate:   document.getElementById("newReleaseDate").value,
+    duration:      document.getElementById("newDuration").value.trim(),
+    isrc:          document.getElementById("newISRC").value.trim(),
+    featuredArtist:document.getElementById("newFeatured").value.trim(),
+    writersCredit: document.getElementById("newWriters").value.trim(),
+    producerName:  document.getElementById("newProducer").value.trim()
+  };
+  if (!payload.songName) {
+    msg.style.color = "#f44336";
+    msg.textContent = "Song name is required.";
+    return;
+  }
+  try {
+    const url    = editingId ? "/api/songs/" + editingId : "/api/songs";
+    const method = editingId ? "PUT" : "POST";
+    const res    = await fetch(url, {
+      method,
+      headers: { "Authorization": token, "Content-Type": "application/json" },
+      body: JSON.stringify(payload)
+    });
+    const data = await res.json();
+    msg.style.color = res.ok ? "#4CAF50" : "#f44336";
+    msg.textContent = data.message;
+    if (res.ok) {
+      clearSongForm();
+      loadDashboard();
+    }
+  } catch {
+    msg.textContent = "Something went wrong. Try again.";
+  }
+}
+
+async function deleteSong(id) {
+  if (!confirm("Delete this song? This cannot be undone.")) return;
+  const token = localStorage.getItem("artistToken");
+  const res   = await fetch("/api/songs/" + id, {
+    method: "DELETE",
+    headers: { "Authorization": token }
+  });
+  const data = await res.json();
+  alert(data.message);
+  loadDashboard();
+}
+
 
 // Auto-run when on dashboard page
 if (document.getElementById("welcomeMsg")) loadDashboard();
