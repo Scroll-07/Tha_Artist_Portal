@@ -279,43 +279,81 @@ app.get("/api/profile", authMiddleware, async (req, res) => {
   }
 });
 
-// UPDATE artist profile
+// UPDATE artist profile -- only updates fields that have values
 app.put("/api/profile", authMiddleware, async (req, res) => {
   const { artistName, email, phone, city, state, genre,
           instagram, tiktok, spotify, apple, youtube } = req.body;
   try {
     const pool = await getPool();
-    await pool.request()
-      .input("ArtistID",  sql.Int,      req.artist.artistId)
-      .input("Name",      sql.NVarChar, artistName)
-      .input("Email",     sql.NVarChar, email)
-      .input("Phone",     sql.NVarChar, phone     || null)
-      .input("City",      sql.NVarChar, city      || null)
-      .input("State",     sql.NVarChar, state     || null)
-      .input("Instagram", sql.NVarChar, instagram || null)
-      .input("TikTok",    sql.NVarChar, tiktok    || null)
-      .input("Spotify",   sql.NVarChar, spotify   || null)
-      .input("Apple",     sql.NVarChar, apple     || null)
-      .input("YouTube",   sql.NVarChar, youtube   || null)
-      .query(`UPDATE Artists SET
-        Artist_Name            = @Name,
-        Artist_Email           = @Email,
-        Artist_Phone_Number    = @Phone,
-        Artist_City            = @City,
-        Artist_State           = @State,
-        Artist_Instagram_URL   = @Instagram,
-        Artist_TikTok_URL      = @TikTok,
-        Artist_Spotify_URL     = @Spotify,
-        Artist_Apple_URL       = @Apple,
-        Artist_Youtube_URL     = @YouTube
-        WHERE Artist_ID        = @ArtistID`);
 
-    // Also update name and email in ArtistLogins
-    await pool.request()
-      .input("ArtistID", sql.Int,      req.artist.artistId)
-      .input("Name",     sql.NVarChar, artistName)
-      .input("Email",    sql.NVarChar, email)
-      .query("UPDATE ArtistLogins SET Artist_Name = @Name, Artist_Email = @Email WHERE Artist_ID = @ArtistID");
+    // Build the SET clause dynamically -- only include fields that were filled in
+    const updates = [];
+    const inputs  = [];
+
+    if (artistName && artistName.trim()) {
+      updates.push("Artist_Name = @Name");
+      inputs.push({ name: "Name", type: sql.NVarChar, value: artistName.trim() });
+    }
+    if (email && email.trim()) {
+      updates.push("Artist_Email = @Email");
+      inputs.push({ name: "Email", type: sql.NVarChar, value: email.trim() });
+    }
+    if (phone && phone.trim()) {
+      updates.push("Artist_Phone_Number = @Phone");
+      inputs.push({ name: "Phone", type: sql.NVarChar, value: phone.trim() });
+    }
+    if (city && city.trim()) {
+      updates.push("Artist_City = @City");
+      inputs.push({ name: "City", type: sql.NVarChar, value: city.trim() });
+    }
+    if (state && state.trim()) {
+      updates.push("Artist_State = @State");
+      inputs.push({ name: "State", type: sql.NVarChar, value: state.trim() });
+    }
+    if (instagram && instagram.trim()) {
+      updates.push("Artist_Instagram_URL = @Instagram");
+      inputs.push({ name: "Instagram", type: sql.NVarChar, value: instagram.trim() });
+    }
+    if (tiktok && tiktok.trim()) {
+      updates.push("Artist_TikTok_URL = @TikTok");
+      inputs.push({ name: "TikTok", type: sql.NVarChar, value: tiktok.trim() });
+    }
+    if (spotify && spotify.trim()) {
+      updates.push("Artist_Spotify_URL = @Spotify");
+      inputs.push({ name: "Spotify", type: sql.NVarChar, value: spotify.trim() });
+    }
+    if (apple && apple.trim()) {
+      updates.push("Artist_Apple_URL = @Apple");
+      inputs.push({ name: "Apple", type: sql.NVarChar, value: apple.trim() });
+    }
+    if (youtube && youtube.trim()) {
+      updates.push("Artist_Youtube_URL = @YouTube");
+      inputs.push({ name: "YouTube", type: sql.NVarChar, value: youtube.trim() });
+    }
+
+    // If nothing was filled in dont do anything
+    if (updates.length === 0)
+      return res.status(400).json({ message: "No changes were made -- all fields were empty." });
+
+    // Build and run the query with only the filled in fields
+    const request = pool.request().input("ArtistID", sql.Int, req.artist.artistId);
+    inputs.forEach(i => request.input(i.name, i.type, i.value));
+    await request.query(`UPDATE Artists SET ${updates.join(", ")} WHERE Artist_ID = @ArtistID`);
+
+    // Update ArtistLogins only if name or email changed
+    if (artistName && artistName.trim() || email && email.trim()) {
+      const loginUpdates = [];
+      const loginRequest = pool.request().input("ArtistID", sql.Int, req.artist.artistId);
+      if (artistName && artistName.trim()) {
+        loginUpdates.push("Artist_Name = @Name");
+        loginRequest.input("Name", sql.NVarChar, artistName.trim());
+      }
+      if (email && email.trim()) {
+        loginUpdates.push("Artist_Email = @Email");
+        loginRequest.input("Email", sql.NVarChar, email.trim());
+      }
+      await loginRequest.query(`UPDATE ArtistLogins SET ${loginUpdates.join(", ")} WHERE Artist_ID = @ArtistID`);
+    }
 
     res.json({ message: "Profile updated successfully!" });
   } catch (err) {

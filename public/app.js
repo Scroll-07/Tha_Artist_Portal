@@ -257,19 +257,34 @@ function closeProfileModal() {
 async function saveProfile() {
   const token = localStorage.getItem("artistToken");
   const msg   = document.getElementById("updMsg");
-  const payload = {
-    artistName: document.getElementById("updName").value.trim(),
-    email:      document.getElementById("updEmail").value.trim(),
-    phone:      document.getElementById("updPhone").value.trim(),
-    city:       document.getElementById("updCity").value.trim(),
-    state:      document.getElementById("updState").value.trim(),
-    genre:      document.getElementById("updGenre").value.trim(),
-    instagram:  document.getElementById("updInstagram").value.trim(),
-    tiktok:     document.getElementById("updTikTok").value.trim(),
-    spotify:    document.getElementById("updSpotify").value.trim(),
-    apple:      document.getElementById("updApple").value.trim(),
-    youtube:    document.getElementById("updYouTube").value.trim()
-  };
+
+  // Only include fields that have something typed in them
+  const payload = {};
+  const fields = [
+    { key: "artistName", id: "updName"      },
+    { key: "email",      id: "updEmail"     },
+    { key: "phone",      id: "updPhone"     },
+    { key: "city",       id: "updCity"      },
+    { key: "state",      id: "updState"     },
+    { key: "genre",      id: "updGenre"     },
+    { key: "instagram",  id: "updInstagram" },
+    { key: "tiktok",     id: "updTikTok"    },
+    { key: "spotify",    id: "updSpotify"   },
+    { key: "apple",      id: "updApple"     },
+    { key: "youtube",    id: "updYouTube"   }
+  ];
+
+  fields.forEach(f => {
+    const val = document.getElementById(f.id).value.trim();
+    if (val) payload[f.key] = val;
+  });
+
+  if (Object.keys(payload).length === 0) {
+    msg.style.color = "#f44336";
+    msg.textContent = "Please fill in at least one field to update.";
+    return;
+  }
+
   try {
     const res  = await fetch("/api/profile", {
       method:  "PUT",
@@ -280,15 +295,16 @@ async function saveProfile() {
     msg.style.color = res.ok ? "#4CAF50" : "#f44336";
     msg.textContent = data.message;
     if (res.ok) {
-      localStorage.setItem("artistName", payload.artistName);
-      document.getElementById("welcomeMsg").textContent = "Welcome back, " + payload.artistName;
+      if (payload.artistName) {
+        localStorage.setItem("artistName", payload.artistName);
+        document.getElementById("welcomeMsg").textContent = "Welcome back, " + payload.artistName;
+      }
       setTimeout(closeProfileModal, 1500);
     }
   } catch {
     msg.textContent = "Something went wrong. Try again.";
   }
 }
-
 // ── Song Section ─────────────────────────────────────────────────
 function toggleSongForm() {
   const section = document.getElementById("addSongSection");
