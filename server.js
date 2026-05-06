@@ -530,4 +530,26 @@ app.post("/api/admin/contracts", async (req, res) => {
   }
 });
 
+
+// GET artist social links
+app.get("/api/social", authMiddleware, async (req, res) => {
+  try {
+    const pool   = await getPool();
+    const result = await pool.request()
+      .input("ArtistID", sql.Int, req.artist.artistId)
+      .query(`SELECT 
+        Artist_Instagram_URL,
+        Artist_TikTok_URL,
+        Artist_Spotify_URL,
+        Artist_Apple_URL,
+        Artist_Youtube_URL
+        FROM Artists WHERE Artist_ID = @ArtistID`);
+    if (result.recordset.length === 0)
+      return res.status(404).json({ message: "Artist not found." });
+    res.json(result.recordset[0]);
+  } catch (err) {
+    res.status(500).json({ message: "Error loading social links.", error: err.message });
+  }
+});
+
 app.listen(PORT, () => console.log("Server running on port " + PORT));
