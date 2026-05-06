@@ -5,30 +5,28 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>My Dashboard -- Tha Artist Portal</title>
   <link rel="stylesheet" href="style.css">
-
-<link rel="manifest" href="/manifest.json">
-<meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="black">
-<meta name="apple-mobile-web-app-title" content="TAP">
-<link rel="apple-touch-icon" href="/icon-512.png">
-<meta name="theme-color" content="#B8860B">
-
+  <link rel="manifest" href="/manifest.json">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black">
+  <meta name="apple-mobile-web-app-title" content="TAP">
+  <link rel="apple-touch-icon" href="/icon-512.png">
+  <meta name="theme-color" content="#B8860B">
 </head>
 <body class="dashboard-body">
-
 
   <header class="dash-header">
     <div>
       <h1 class="portal-title small">Tha Artist Portal</h1>
       <p id="welcomeMsg" class="welcome-text">Loading...</p>
     </div>
-    <button class="update-profile-btn" onclick="openProfileModal()">Update Profile</button>
-    <button class="logout-btn" onclick="logout()">Logout</button>  </header>
-
+    <div style="display:flex; gap:10px;">
+      <button class="update-profile-btn" onclick="openProfileModal()">Update Profile</button>
+      <button class="logout-btn" onclick="logout()">Logout</button>
+    </div>
+  </header>
 
   <main class="dash-main">
-
 
     <!-- STREAMS -->
     <section class="dash-section">
@@ -36,13 +34,11 @@
       <div id="streamsContainer" class="cards-row"></div>
     </section>
 
-
-<!-- SOCIAL & STREAMING LINKS -->
-<section class="dash-section">
-  <h2 class="section-title">My Platforms</h2>
-  <div id="socialContainer" class="social-grid"></div>
-</section>
-
+    <!-- MY PLATFORMS -->
+    <section class="dash-section">
+      <h2 class="section-title">My Platforms</h2>
+      <div id="socialContainer" class="social-grid"></div>
+    </section>
 
     <!-- ROYALTIES -->
     <section class="dash-section">
@@ -58,21 +54,43 @@
       </div>
     </section>
 
-
-    <!-- SONGS -->
+    <!-- SONG CATALOG + ADD/EDIT -->
     <section class="dash-section">
-      <h2 class="section-title">Song Catalog</h2>
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
+        <h2 class="section-title" style="margin:0">Song Catalog</h2>
+        <button class="update-profile-btn" onclick="toggleSongForm()">+ Add Song</button>
+      </div>
+
+      <div id="addSongSection" style="display:none; background:#1a1a1a; border:1px solid #B8860B; border-radius:10px; padding:24px; margin-bottom:24px;">
+        <h3 id="songFormTitle" style="color:#D4AF37; margin-bottom:16px;">Add New Song</h3>
+        <input type="hidden" id="editingSongId">
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
+          <input id="newSongName"    placeholder="Song Name *"            style="background:#222; border:1px solid #444; border-radius:6px; padding:10px; color:#eee; font-size:0.9rem;">
+          <input id="newAlbum"       placeholder="Album"                  style="background:#222; border:1px solid #444; border-radius:6px; padding:10px; color:#eee; font-size:0.9rem;">
+          <input id="newReleaseDate" placeholder="Release Date" type="date" style="background:#222; border:1px solid #444; border-radius:6px; padding:10px; color:#eee; font-size:0.9rem;">
+          <input id="newDuration"    placeholder="Duration (e.g. 3:45)"   style="background:#222; border:1px solid #444; border-radius:6px; padding:10px; color:#eee; font-size:0.9rem;">
+          <input id="newISRC"        placeholder="ISRC Code"              style="background:#222; border:1px solid #444; border-radius:6px; padding:10px; color:#eee; font-size:0.9rem;">
+          <input id="newFeatured"    placeholder="Featured Artist"        style="background:#222; border:1px solid #444; border-radius:6px; padding:10px; color:#eee; font-size:0.9rem;">
+          <input id="newWriters"     placeholder="Writers Credit"         style="background:#222; border:1px solid #444; border-radius:6px; padding:10px; color:#eee; font-size:0.9rem;">
+          <input id="newProducer"    placeholder="Producer Name"          style="background:#222; border:1px solid #444; border-radius:6px; padding:10px; color:#eee; font-size:0.9rem;">
+        </div>
+        <p id="songMsg" style="margin-top:12px; font-size:0.9rem;"></p>
+        <div style="display:flex; gap:12px; margin-top:16px;">
+          <button id="songSubmitBtn" class="gold-btn" style="flex:1" onclick="submitSong()">Add Song</button>
+          <button class="cancel-btn" style="flex:1" onclick="clearSongForm()">Clear</button>
+        </div>
+      </div>
+
       <div class="table-wrap">
-        <table id="songsTable">
+        <table>
           <thead><tr>
-            <th>Song</th><th>Album</th>
-            <th>Released</th><th>Duration</th><th>ISRC</th>
+            <th>Song</th><th>Album</th><th>Released</th>
+            <th>Duration</th><th>ISRC</th><th>Actions</th>
           </tr></thead>
           <tbody id="songsBody"></tbody>
         </table>
       </div>
     </section>
-
 
     <!-- CONTRACTS -->
     <section class="dash-section">
@@ -80,79 +98,37 @@
       <div id="contractsContainer" class="cards-row"></div>
     </section>
 
-<!-- ADD / EDIT SONG SECTION -->
-<section class="dash-section">
-  <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
-    <h2 class="section-title" style="margin:0">My Songs</h2>
-    <button class="update-profile-btn" onclick="toggleSongForm()">+ Add Song</button>
-  </div>
-
-  <div id="addSongSection" style="display:none; background:#1a1a1a; border:1px solid #B8860B; border-radius:10px; padding:24px; margin-bottom:24px;">
-    <h3 id="songFormTitle" style="color:#D4AF37; margin-bottom:16px;">Add New Song</h3>
-    <input type="hidden" id="editingSongId">
-    <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
-      <input id="newSongName"    placeholder="Song Name *"       style="background:#222; border:1px solid #444; border-radius:6px; padding:10px; color:#eee; font-size:0.9rem;">
-      <input id="newAlbum"       placeholder="Album"             style="background:#222; border:1px solid #444; border-radius:6px; padding:10px; color:#eee; font-size:0.9rem;">
-      <input id="newReleaseDate" placeholder="Release Date"      style="background:#222; border:1px solid #444; border-radius:6px; padding:10px; color:#eee; font-size:0.9rem;" type="date">
-      <input id="newDuration"    placeholder="Duration (e.g. 3:45)" style="background:#222; border:1px solid #444; border-radius:6px; padding:10px; color:#eee; font-size:0.9rem;">
-      <input id="newISRC"        placeholder="ISRC Code"         style="background:#222; border:1px solid #444; border-radius:6px; padding:10px; color:#eee; font-size:0.9rem;">
-      <input id="newFeatured"    placeholder="Featured Artist"   style="background:#222; border:1px solid #444; border-radius:6px; padding:10px; color:#eee; font-size:0.9rem;">
-      <input id="newWriters"     placeholder="Writers Credit"    style="background:#222; border:1px solid #444; border-radius:6px; padding:10px; color:#eee; font-size:0.9rem;">
-      <input id="newProducer"    placeholder="Producer Name"     style="background:#222; border:1px solid #444; border-radius:6px; padding:10px; color:#eee; font-size:0.9rem;">
-    </div>
-    <p id="songMsg" style="margin-top:12px; font-size:0.9rem;"></p>
-    <div style="display:flex; gap:12px; margin-top:16px;">
-      <button id="songSubmitBtn" class="gold-btn" style="flex:1" onclick="submitSong()">Add Song</button>
-      <button class="cancel-btn" style="flex:1" onclick="clearSongForm()">Clear</button>
-    </div>
-  </div>
-
-  <div class="table-wrap">
-    <table id="songsTable">
-      <thead><tr>
-        <th>Song</th><th>Album</th><th>Released</th>
-        <th>Duration</th><th>ISRC</th><th>Actions</th>
-      </tr></thead>
-      <tbody id="songsBody"></tbody>
-    </table>
-  </div>
-</section>
-
   </main>
 
   <!-- PROFILE MODAL -->
-<div id="profileModal" class="modal-overlay">
-  <div class="modal-box">
-    <h2>Update Your Profile</h2>
-    <div class="modal-grid">
+  <div id="profileModal" class="modal-overlay">
+    <div class="modal-box">
+      <h2>Update Your Profile</h2>
+      <div class="modal-grid">
+        <p class="modal-divider">Account Info</p>
+        <input class="full-width" type="text"  id="updName"  placeholder="Artist Name">
+        <input class="full-width" type="email" id="updEmail" placeholder="Email Address">
 
-      <p class="modal-divider">Account Info</p>
-      <input class="full-width" type="text"  id="updName"  placeholder="Artist Name">
-      <input class="full-width" type="email" id="updEmail" placeholder="Email Address">
+        <p class="modal-divider">Contact & Location</p>
+        <input type="text" id="updPhone" placeholder="Phone Number">
+        <input type="text" id="updCity"  placeholder="City">
+        <input class="full-width" type="text" id="updState" placeholder="State">
+        <input class="full-width" type="text" id="updGenre" placeholder="Primary Genre">
 
-      <p class="modal-divider">Contact & Location</p>
-      <input type="text" id="updPhone" placeholder="Phone Number">
-      <input type="text" id="updCity"  placeholder="City">
-      <input class="full-width" type="text" id="updState" placeholder="State">
-      <input class="full-width" type="text" id="updGenre" placeholder="Primary Genre">
-
-      <p class="modal-divider">Social & Streaming Links</p>
-      <input type="text" id="updInstagram" placeholder="Instagram URL">
-      <input type="text" id="updTikTok"    placeholder="TikTok URL">
-      <input type="text" id="updSpotify"   placeholder="Spotify URL">
-      <input type="text" id="updApple"     placeholder="Apple Music URL">
-      <input class="full-width" type="text" id="updYouTube" placeholder="YouTube URL">
-
-    </div>
-    <p id="updMsg" class="msg" style="margin-top:12px"></p>
-    <div class="modal-actions">
-      <button class="cancel-btn" onclick="closeProfileModal()">Cancel</button>
-      <button class="gold-btn" onclick="saveProfile()">Save Changes</button>
+        <p class="modal-divider">Social & Streaming Links</p>
+        <input type="text" id="updInstagram" placeholder="Instagram URL">
+        <input type="text" id="updTikTok"    placeholder="TikTok URL">
+        <input type="text" id="updSpotify"   placeholder="Spotify URL">
+        <input type="text" id="updApple"     placeholder="Apple Music URL">
+        <input class="full-width" type="text" id="updYouTube" placeholder="YouTube URL">
+      </div>
+      <p id="updMsg" class="msg" style="margin-top:12px"></p>
+      <div class="modal-actions">
+        <button class="cancel-btn" onclick="closeProfileModal()">Cancel</button>
+        <button class="gold-btn" onclick="saveProfile()">Save Changes</button>
+      </div>
     </div>
   </div>
-</div>
-
-<script src="app.js"></script>
 
   <script src="app.js"></script>
 </body>
