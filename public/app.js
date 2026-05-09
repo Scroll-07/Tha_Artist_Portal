@@ -210,8 +210,6 @@ function renderSocial(data) {
 
 // ── Profile Modal ────────────────────────────────────────────────
 async function openProfileModal() {
-  // Load current data into fields
-async function openProfileModal() {
   const token = localStorage.getItem("artistToken");
   try {
     const res  = await fetch("/api/profile", {
