@@ -22,9 +22,11 @@ const dbConfig = {
   user:     process.env.DB_USER,
   password: process.env.DB_PASSWORD,
   port:     1433,
-  options:  { encrypt: false, trustServerCertificate: true }
+  options:  {
+    encrypt:                true,
+    trustServerCertificate: false
+  }
 };
-
 
 async function getPool() {
   return await sql.connect(dbConfig);
