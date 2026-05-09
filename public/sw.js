@@ -1,4 +1,4 @@
-const CACHE = 'tap-v1';
+const CACHE = 'tap-v2';
 const FILES = [
   '/',
   '/index.html',
