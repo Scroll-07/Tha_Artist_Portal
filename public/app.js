@@ -352,7 +352,6 @@ async function saveProfile() {
   const token = localStorage.getItem("artistToken");
   const msg   = document.getElementById("updMsg");
 
-  // Only include fields that have something typed in them
   const payload = {};
   const fields = [
     { key: "artistName", id: "updName"      },
@@ -368,9 +367,10 @@ async function saveProfile() {
     { key: "youtube",    id: "updYouTube"   }
   ];
 
+  // Send ALL fields that have any value -- including pre-filled ones
   fields.forEach(f => {
-    const val = document.getElementById(f.id).value.trim();
-    if (val) payload[f.key] = val;
+    const el = document.getElementById(f.id);
+    if (el && el.value.trim()) payload[f.key] = el.value.trim();
   });
 
   if (Object.keys(payload).length === 0) {
@@ -393,7 +393,11 @@ async function saveProfile() {
         localStorage.setItem("artistName", payload.artistName);
         document.getElementById("welcomeMsg").textContent = "Welcome back, " + payload.artistName;
       }
-      setTimeout(closeProfileModal, 1500);
+      // Reload social links after saving
+      setTimeout(() => {
+        closeProfileModal();
+        loadDashboard();
+      }, 1500);
     }
   } catch {
     msg.textContent = "Something went wrong. Try again.";
