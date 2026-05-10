@@ -56,10 +56,11 @@
       <div style="display:flex; gap:10px; align-items:center;">
         <button class="update-profile-btn" onclick="switchAdminTab('pending')" id="tabPending">Registrations</button>
         <button class="update-profile-btn" onclick="switchAdminTab('data')" id="tabData">Data Entry</button>
-        <button class="logout-btn" onclick="adminLogout()">Logout</button>
         <button class='update-profile-btn' onclick='switchAdminTab("pending")'>Registrations</button>
         <button class='update-profile-btn' onclick='switchAdminTab("data")'>Data Entry</button>
         <button class='update-profile-btn' onclick='switchAdminTab("users")'>All Users</button>
+        <button class="logout-btn" onclick="adminLogout()">Logout</button>
+
       </div>
     </div>
     <div id="pendingList"></div>
