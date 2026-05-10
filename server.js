@@ -664,6 +664,7 @@ async function generateTapId(role) {
   const num = String(result.recordset[0].Total + 1).padStart(5, '0');
   return prefix + '-' + year + '-' + num;
 
+}
 
 // ADMIN -- get all users by role
 app.get('/api/admin/all-users', async (req, res) => {
