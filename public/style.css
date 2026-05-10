@@ -137,3 +137,48 @@ tr:hover td { background: #1a1a1a; }
   border: none; border-radius: 4px; cursor: pointer; font-size: 0.8rem;
 }
 .delete-btn:hover { background: #C62828; }
+
+
+/* ── Role badge and TAP ID ── */
+.role-badge {
+  display: inline-block;
+  padding: 3px 12px;
+  background: #B8860B22;
+  border: 1px solid #B8860B;
+  border-radius: 20px;
+  color: #D4AF37;
+  font-size: 0.78rem;
+  font-weight: bold;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+
+.tap-id-display {
+  color: #555;
+  font-size: 0.78rem;
+  font-family: 'Courier New', monospace;
+}
+
+
+/* ── Role specific field containers ── */
+#roleSpecificFields input,
+#roleSpecificFields select {
+  width: 100%;
+  padding: 12px;
+  margin-bottom: 14px;
+  background: #222;
+  border: 1px solid #444;
+  border-radius: 6px;
+  color: #eee;
+  font-size: 1rem;
+}
+
+
+/* ── Role color accents ── */
+.role-Artist        { border-color: #D4AF37; }
+.role-Manager       { border-color: #1565C0; }
+.role-Producer      { border-color: #6A1B9A; }
+.role-Engineer      { border-color: #2E7D32; }
+.role-Record-Label  { border-color: #C62828; }
+.role-Creative      { border-color: #E65100; }

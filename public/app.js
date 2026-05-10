@@ -7,68 +7,170 @@ function showTab(tab) {
 }
 
 
+// ── Role specific fields ─────────────────────────────────────────
+function updateRoleFields() {
+  const role = document.getElementById('regRole').value;
+  const container = document.getElementById('roleSpecificFields');
+
+
+  const fieldSets = {
+    'Artist': `
+      <p class='section-divider'>Artist Details</p>
+      <input type='text' id='regGenre'    placeholder='Primary Genre (e.g. Hip Hop, R&B, Pop)'>
+      <input type='text' id='regAscap'    placeholder='ASCAP / BMI / PRO ID (optional)'>
+      <input type='text' id='regLabel'    placeholder='Record Label (if signed)'>
+      <input type='text' id='regManagerId' placeholder='Manager TAP ID (optional)'>`,
+
+
+    'Manager': `
+      <p class='section-divider'>Manager Details</p>
+      <input type='text' id='regLabel'    placeholder='Label or Company Name'>
+      <input type='text' id='regRoster'   placeholder='Number of Artists on Roster'>`,
+
+
+    'Producer': `
+      <p class='section-divider'>Producer Details</p>
+      <input type='text' id='regGenre'      placeholder='Genre Specialty (e.g. Trap, R&B, Pop)'>
+      <input type='text' id='regDaw'        placeholder='DAW Software (e.g. FL Studio, Logic Pro)'>
+      <input type='text' id='regYearsExp'   placeholder='Years of Experience'>`,
+
+
+    'Engineer': `
+      <p class='section-divider'>Engineer Details</p>
+      <input type='text' id='regEngType'    placeholder='Speciality (Mixing, Mastering, Recording, Live)'>
+      <input type='text' id='regStudio'     placeholder='Studio Name (if applicable)'>
+      <input type='text' id='regDaw'        placeholder='DAW Software'>
+      <input type='text' id='regYearsExp'   placeholder='Years of Experience'>`,
+
+
+    'Record Label': `
+      <p class='section-divider'>Label Details</p>
+      <input type='text' id='regLabel'      placeholder='Label Name'>
+      <input type='text' id='regLabelOwner' placeholder='Label Owner Name'>
+      <input type='text' id='regRoster'     placeholder='Number of Artists on Roster'>`,
+
+
+    'Painter': `
+      <p class='section-divider'>Artist Details</p>
+      <input type='text' id='regSubField'   placeholder='Art Style (e.g. Abstract, Realism, Digital)'>`,
+
+
+    'Photographer': `
+      <p class='section-divider'>Photographer Details</p>
+      <input type='text' id='regSubField'   placeholder='Specialty (e.g. Portrait, Concert, Commercial)'>`,
+
+
+    'Filmmaker': `
+      <p class='section-divider'>Filmmaker Details</p>
+      <input type='text' id='regSubField'   placeholder='Specialty (e.g. Music Videos, Short Films, Docs)'>`,
+
+
+    'Fashion Designer': `
+      <p class='section-divider'>Fashion Details</p>
+      <input type='text' id='regSubField'   placeholder='Specialty (e.g. Streetwear, Luxury, Accessories)'>`,
+
+
+    'Dancer': `
+      <p class='section-divider'>Dancer Details</p>
+      <input type='text' id='regSubField'   placeholder='Dance Style (e.g. Hip Hop, Contemporary, Ballet)'>`,
+  };
+
+
+  const html = fieldSets[role] || `
+    <p class='section-divider'>Creative Details</p>
+    <input type='text' id='regSubField' placeholder='Describe your creative field'>`;
+
+
+  container.innerHTML = `<div class='register-grid' style='margin-top:0'>${html}</div>`;
+}
+
+
+
 
 // ── Register ────────────────────────────────────────────────────
 async function registerArtist() {
-  const name  = document.getElementById("regName").value.trim();
-  const email = document.getElementById("regEmail").value.trim();
-  const pass  = document.getElementById("regPass").value;
-  const msg   = document.getElementById("regMsg");
+  const role  = document.getElementById('regRole').value.trim();
+  const name  = document.getElementById('regName').value.trim();
+  const email = document.getElementById('regEmail').value.trim();
+  const pass  = document.getElementById('regPass').value;
+  const msg   = document.getElementById('regMsg');
 
-  if (!name || !email || !pass) {
-    msg.style.color = "#f44336";
-    msg.textContent = "Name, email and password are required.";
+
+  if (!role || !name || !email || !pass) {
+    msg.style.color = '#f44336';
+    msg.textContent = 'Role, name, email and password are required.';
     return;
   }
 
+
+  // Helper to safely get field value
+  const val = id => { const el = document.getElementById(id); return el ? el.value.trim() : ''; };
+
+
   const payload = {
-    artistName:   name,
-    email:        email,
+    role,
+    name,
+    email,
     password:     pass,
-    phone:        document.getElementById("regPhone").value.trim(),
-    city:         document.getElementById("regCity").value.trim(),
-    state:        document.getElementById("regState").value.trim(),
-    genre:        document.getElementById("regGenre").value.trim(),
-    instagram:    document.getElementById("regInstagram").value.trim(),
-    tiktok:       document.getElementById("regTikTok").value.trim(),
-    spotify:      document.getElementById("regSpotify").value.trim(),
-    apple:        document.getElementById("regApple").value.trim(),
-    youtube:      document.getElementById("regYouTube").value.trim()
+    phone:        val('regPhone'),
+    city:         val('regCity'),
+    state:        val('regState'),
+    country:      val('regCountry'),
+    tapIdLink:    val('regTapIdLink'),
+    instagram:    val('regInstagram'),
+    tiktok:       val('regTikTok'),
+    spotify:      val('regSpotify'),
+    apple:        val('regApple'),
+    youtube:      val('regYouTube'),
+    website:      val('regWebsite'),
+    bio:          val('regBio'),
+    genre:        val('regGenre'),
+    ascapId:      val('regAscap'),
+    labelName:    val('regLabel'),
+    dawSoftware:  val('regDaw'),
+    engineerType: val('regEngType'),
+    studioName:   val('regStudio'),
+    yearsExp:     val('regYearsExp'),
+    subField:     val('regSubField'),
   };
 
+
   try {
-    const res  = await fetch("/api/register", {
-      method:  "POST",
-      headers: { "Content-Type": "application/json" },
+    const res  = await fetch('/api/register', {
+      method:  'POST',
+      headers: { 'Content-Type': 'application/json' },
       body:    JSON.stringify(payload)
     });
     const data = await res.json();
-    msg.style.color = res.ok ? "#4CAF50" : "#f44336";
+    msg.style.color = res.ok ? '#4CAF50' : '#f44336';
     msg.textContent = data.message;
   } catch {
-    msg.textContent = "Something went wrong. Try again.";
+    msg.textContent = 'Something went wrong. Try again.';
   }
 }
 
 
 // ── Login ────────────────────────────────────────────────────────
 async function loginArtist() {
-  const email = document.getElementById("loginEmail").value.trim();
-  const pass  = document.getElementById("loginPass").value;
-  const msg   = document.getElementById("loginMsg");
+  const email = document.getElementById('loginEmail').value.trim();
+  const pass  = document.getElementById('loginPass').value;
+  const msg   = document.getElementById('loginMsg');
   try {
-    const res  = await fetch("/api/login", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
+    const res  = await fetch('/api/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ email, password: pass })
     });
     const data = await res.json();
     if (!res.ok) { msg.textContent = data.message; return; }
-    localStorage.setItem("artistToken", data.token);
-    localStorage.setItem("artistName",  data.artistName);
-    window.location.href = "dashboard.html";
-  } catch { msg.textContent = "Login failed. Try again."; }
+    localStorage.setItem('artistToken', data.token);
+    localStorage.setItem('artistName',  data.artistName);
+    localStorage.setItem('artistRole',  data.role);
+    localStorage.setItem('artistTapId', data.tapId || '');
+    window.location.href = 'dashboard.html';
+  } catch { msg.textContent = 'Login failed. Try again.'; }
 }
+
 
 
 // ── Logout ──────────────────────────────────────────────────────
@@ -81,17 +183,24 @@ function logout() {
 
 // ── Load dashboard data ─────────────────────────────────────────
 async function loadDashboard() {
-  const token = localStorage.getItem("artistToken");
-  const name  = localStorage.getItem("artistName");
-  if (!token) { window.location.href = "index.html"; return; }
-  document.getElementById("welcomeMsg").textContent = "Welcome back, " + name;
-  const headers = { "Authorization": token };
+  const token = localStorage.getItem('artistToken');
+  const name  = localStorage.getItem('artistName');
+  const role  = localStorage.getItem('artistRole') || 'Artist';
+  const tapId = localStorage.getItem('artistTapId') || '';
+  if (!token) { window.location.href = 'index.html'; return; }
+  document.getElementById('welcomeMsg').textContent = 'Welcome back, ' + name;
+  // Show role badge and TAP ID if elements exist
+  const roleBadge = document.getElementById('roleBadge');
+  const tapIdEl   = document.getElementById('tapIdDisplay');
+  if (roleBadge) roleBadge.textContent = role;
+  if (tapIdEl)   tapIdEl.textContent   = tapId ? 'Your TAP ID: ' + tapId : '';
+  const headers = { 'Authorization': token };
   const [streams, royalties, songs, contracts, social] = await Promise.all([
-    fetch("/api/streams",   { headers }).then(r => r.json()),
-    fetch("/api/royalties", { headers }).then(r => r.json()),
-    fetch("/api/songs",     { headers }).then(r => r.json()),
-    fetch("/api/contracts", { headers }).then(r => r.json()),
-    fetch("/api/social",    { headers }).then(r => r.json())
+    fetch('/api/streams',   { headers }).then(r => r.json()),
+    fetch('/api/royalties', { headers }).then(r => r.json()),
+    fetch('/api/songs',     { headers }).then(r => r.json()),
+    fetch('/api/contracts', { headers }).then(r => r.json()),
+    fetch('/api/social',    { headers }).then(r => r.json())
   ]);
   renderStreams(streams);
   renderRoyalties(royalties);
@@ -99,6 +208,7 @@ async function loadDashboard() {
   renderContracts(contracts);
   renderSocial(social);
 }
+
 
 
 function renderStreams(data) {

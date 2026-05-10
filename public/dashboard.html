@@ -15,16 +15,21 @@
 </head>
 <body class="dashboard-body">
 
-  <header class="dash-header">
-    <div>
-      <h1 class="portal-title small">Tha Artist Portal</h1>
-      <p id="welcomeMsg" class="welcome-text">Loading...</p>
+<header class='dash-header'>
+  <div>
+    <h1 class='portal-title small'>Tha Artist Portal</h1>
+    <p id='welcomeMsg' class='welcome-text'>Loading...</p>
+    <div style='display:flex; gap:8px; align-items:center; margin-top:4px;'>
+      <span id='roleBadge' class='role-badge'></span>
+      <span id='tapIdDisplay' class='tap-id-display'></span>
     </div>
-    <div style="display:flex; gap:10px;">
-      <button class="update-profile-btn" onclick="openProfileModal()">Update Profile</button>
-      <button class="logout-btn" onclick="logout()">Logout</button>
-    </div>
-  </header>
+  </div>
+  <div style='display:flex; gap:10px;'>
+    <button class='update-profile-btn' onclick='openProfileModal()'>Update Profile</button>
+    <button class='logout-btn' onclick='logout()'>Logout</button>
+  </div>
+</header>
+
 
   <main class="dash-main">
 

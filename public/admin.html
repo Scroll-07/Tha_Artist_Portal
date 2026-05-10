@@ -57,6 +57,9 @@
         <button class="update-profile-btn" onclick="switchAdminTab('pending')" id="tabPending">Registrations</button>
         <button class="update-profile-btn" onclick="switchAdminTab('data')" id="tabData">Data Entry</button>
         <button class="logout-btn" onclick="adminLogout()">Logout</button>
+        <button class='update-profile-btn' onclick='switchAdminTab("pending")'>Registrations</button>
+        <button class='update-profile-btn' onclick='switchAdminTab("data")'>Data Entry</button>
+        <button class='update-profile-btn' onclick='switchAdminTab("users")'>All Users</button>
       </div>
     </div>
     <div id="pendingList"></div>
@@ -266,6 +269,45 @@ async function adminAddContract() {
 }
 
 
+async function loadAllUsers() {
+  const res  = await fetch('/api/admin/all-users', { headers: { 'x-admin-key': adminKey } });
+  const data = await res.json();
+  const list = document.getElementById('allUsersList');
+  if (!data.length) { list.innerHTML = '<p class=empty-msg>No users yet.</p>'; return; }
+
+
+  const roles = [...new Set(data.map(u => u.Role || 'Artist'))];
+  list.innerHTML = roles.map(role => `
+    <div style='margin-bottom:24px'>
+      <h3 style='color:#D4AF37; border-bottom:1px solid #333; padding-bottom:8px;
+                 margin-bottom:12px;'>${role}s</h3>
+      ${data.filter(u => (u.Role || 'Artist') === role).map(u => `
+        <div class='pending-card'>
+          <div class='artist-info'>
+            <h3>${u.Artist_Name}
+              <span class='badge' style='background:#333; color:#D4AF37'>
+                ${u.TAP_ID || 'No TAP ID'}</span>
+            </h3>
+            <p>${u.Artist_Email}</p>
+            <p style='color:#555; font-size:0.8rem'>
+              Joined: ${new Date(u.Created_Date).toLocaleDateString()}</p>
+          </div>
+        </div>`).join('')}
+    </div>`).join('');
+}
+
+
+// Add to switchAdminTab function -- add 'users' case
+// if (tab === 'users') {
+//   document.getElementById('pendingList').style.display    = 'none';
+//   document.getElementById('adminDataSection').style.display = 'none';
+//   document.getElementById('allUsersSection').style.display  = 'block';
+//   document.getElementById('adminPanelTitle').textContent   = 'All Users';
+//   loadAllUsers();
+// }
+
+
+
 function switchAdminTab(tab) {
   if (tab === "data") {
     document.getElementById("pendingList").style.display    = "none";
@@ -286,6 +328,12 @@ function switchAdminTab(tab) {
 
 <!-- ADMIN DATA ENTRY SECTION -->
 <div id="adminDataSection" style="display:none">
+<div id='allUsersSection' style='display:none'>
+<div class='admin-container'>
+<div id='allUsersList'></div>
+  </div>
+</div>
+
   <div class="admin-container">
 
     <!-- ADD SONG -->

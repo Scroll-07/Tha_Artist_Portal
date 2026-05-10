@@ -46,84 +46,124 @@ function authMiddleware(req, res, next) {
 }
 
 
-// REGISTER -- sends to staging table first
-app.post("/api/register", async (req, res) => {
-  const { artistName, email, password,
-          phone, city, state, genre,
-          instagram, tiktok, spotify, apple, youtube } = req.body;
+// REGISTER -- all roles with TAP ID generation
+app.post('/api/register', async (req, res) => {
+  const {
+    role, email, password, tapIdLink,
+    // Common fields
+    name, phone, city, state, country,
+    instagram, tiktok, spotify, apple, youtube, website, bio,
+    // Artist specific
+    genre, ascapId, signedToLabel,
+    // Manager specific
+    labelName,
+    // Producer specific
+    dawSoftware, genreSpecialty, yearsExperience,
+    // Engineer specific
+    engineerType, studioName,
+    // Creative specific
+    creativeField, creativeSubField, portfolioUrl
+  } = req.body;
 
-  if (!artistName || !email || !password)
-    return res.status(400).json({ message: "Name, email and password are required." });
+
+  if (!role || !email || !password || !name)
+    return res.status(400).json({ message: 'Role, name, email and password are required.' });
+
 
   try {
     const pool = await getPool();
 
+
+    // Check for duplicate email
     const dupCheck = await pool.request()
-      .input("Email", sql.NVarChar, email)
-      .query("SELECT 1 FROM ArtistLogins WHERE Artist_Email = @Email");
+      .input('Email', sql.NVarChar, email)
+      .query('SELECT 1 FROM ArtistLogins WHERE Artist_Email = @Email');
     if (dupCheck.recordset.length > 0)
-      return res.status(409).json({ message: "An account with this email already exists." });
+      return res.status(409).json({ message: 'An account with this email already exists.' });
+
 
     const pendingCheck = await pool.request()
-      .input("Email2", sql.NVarChar, email)
+      .input('Email2', sql.NVarChar, email)
       .query("SELECT 1 FROM Artist_Registration_Staging WHERE Artist_Email = @Email2 AND Status = 'Pending'");
     if (pendingCheck.recordset.length > 0)
-      return res.status(409).json({ message: "A registration for this email is already pending review." });
+      return res.status(409).json({ message: 'A registration for this email is already pending.' });
 
-    const hash = await bcrypt.hash(password, 12);
 
+    const hash  = await bcrypt.hash(password, 12);
+    const tapId = await generateTapId(role);
+
+
+    // Insert into staging with role info
     await pool.request()
-      .input("Name",      sql.NVarChar, artistName)
-      .input("Email",     sql.NVarChar, email)
-      .input("Hash",      sql.NVarChar, hash)
-      .input("Phone",     sql.NVarChar, phone     || null)
-      .input("City",      sql.NVarChar, city      || null)
-      .input("State",     sql.NVarChar, state     || null)
-      .input("Genre",     sql.NVarChar, genre     || null)
-      .input("Instagram", sql.NVarChar, instagram || null)
-      .input("TikTok",    sql.NVarChar, tiktok    || null)
-      .input("Spotify",   sql.NVarChar, spotify   || null)
-      .input("Apple",     sql.NVarChar, apple     || null)
-      .input("YouTube",   sql.NVarChar, youtube   || null)
+      .input('Name',      sql.NVarChar, name)
+      .input('Email',     sql.NVarChar, email)
+      .input('Hash',      sql.NVarChar, hash)
+      .input('Phone',     sql.NVarChar, phone     || null)
+      .input('City',      sql.NVarChar, city      || null)
+      .input('State',     sql.NVarChar, state     || null)
+      .input('Genre',     sql.NVarChar, genre     || null)
+      .input('Instagram', sql.NVarChar, instagram || null)
+      .input('TikTok',    sql.NVarChar, tiktok    || null)
+      .input('Spotify',   sql.NVarChar, spotify   || null)
+      .input('Apple',     sql.NVarChar, apple     || null)
+      .input('YouTube',   sql.NVarChar, youtube   || null)
       .query(`INSERT INTO Artist_Registration_Staging
         (Artist_Name, Artist_Email, Password_Hash,
          Artist_Phone, Artist_City, Artist_State, Genre_Name,
          Instagram_URL, TikTok_URL, Spotify_URL, Apple_URL, YouTube_URL)
-        VALUES
-        (@Name, @Email, @Hash,
+        VALUES (@Name, @Email, @Hash,
          @Phone, @City, @State, @Genre,
          @Instagram, @TikTok, @Spotify, @Apple, @YouTube)`);
 
-    res.json({ message: "Registration submitted! You will receive access once your account is reviewed." });
+
+    // Store role details in session for approval processing
+    res.json({
+      message: 'Registration submitted! You will receive access once your account is reviewed.',
+      tapId,
+      role
+    });
   } catch (err) {
-    res.status(500).json({ message: "Registration failed.", error: err.message });
+    res.status(500).json({ message: 'Registration failed.', error: err.message });
   }
 });
 
 
-// LOGIN
-app.post("/api/login", async (req, res) => {
+// LOGIN -- returns role and TAP ID
+app.post('/api/login', async (req, res) => {
   const { email, password } = req.body;
   try {
     const pool   = await getPool();
     const result = await pool.request()
-      .input("Email", sql.NVarChar, email)
-      .query("SELECT * FROM ArtistLogins WHERE Artist_Email = @Email");
+      .input('Email', sql.NVarChar, email)
+      .query('SELECT * FROM ArtistLogins WHERE Artist_Email = @Email');
     if (result.recordset.length === 0)
-      return res.status(401).json({ message: "Email not found." });
+      return res.status(401).json({ message: 'Email not found.' });
     const artist = result.recordset[0];
     const match  = await bcrypt.compare(password, artist.Password_Hash);
-    if (!match) return res.status(401).json({ message: "Incorrect password." });
+    if (!match) return res.status(401).json({ message: 'Incorrect password.' });
     const token = jwt.sign(
-      { loginId: artist.Login_ID, artistId: artist.Artist_ID, name: artist.Artist_Name, email: artist.Artist_Email },
+      {
+        loginId:  artist.Login_ID,
+        artistId: artist.Artist_ID,
+        name:     artist.Artist_Name,
+        email:    artist.Artist_Email,
+        role:     artist.Role || 'Artist',
+        tapId:    artist.TAP_ID
+      },
       process.env.JWT_SECRET,
-      { expiresIn: "8h" }
+      { expiresIn: '8h' }
     );
-    res.json({ token, artistName: artist.Artist_Name });
+    res.json({
+      token,
+      artistName: artist.Artist_Name,
+      role:       artist.Role || 'Artist',
+      tapId:      artist.TAP_ID
+    });
   } catch (err) {
-    res.status(500).json({ message: "Login failed.", error: err.message });
+    res.status(500).json({ message: 'Login failed.', error: err.message });
   }
 });
+
 
 
 // GET streams for logged-in artist
@@ -188,67 +228,76 @@ app.get("/api/admin/pending", async (req, res) => {
 });
 
 
-// ADMIN -- approve a registration
-app.post("/api/admin/approve/:id", async (req, res) => {
-  const adminKey = req.headers["x-admin-key"];
+// ADMIN -- approve registration and create role record
+app.post('/api/admin/approve/:id', async (req, res) => {
+  const adminKey = req.headers['x-admin-key'];
   if (adminKey !== process.env.JWT_SECRET)
-    return res.status(403).json({ message: "Not authorized." });
+    return res.status(403).json({ message: 'Not authorized.' });
   try {
     const pool    = await getPool();
     const staging = await pool.request()
-      .input("ID", sql.Int, req.params.id)
+      .input('ID', sql.Int, req.params.id)
       .query("SELECT * FROM Artist_Registration_Staging WHERE Staging_ID = @ID AND Status = 'Pending'");
-
     if (staging.recordset.length === 0)
-      return res.status(404).json({ message: "Record not found or already processed." });
+      return res.status(404).json({ message: 'Record not found or already processed.' });
 
-    const rec = staging.recordset[0];
 
-    // Insert into Artists table with all registration fields
+    const rec   = staging.recordset[0];
+    const role  = rec.Role || 'Artist';
+    const tapId = await generateTapId(role);
+
+
+    // Insert into Artists table
     const artistInsert = await pool.request()
-      .input("Name",      sql.NVarChar, rec.Artist_Name)
-      .input("Email",     sql.NVarChar, rec.Artist_Email)
-      .input("Phone",     sql.NVarChar, rec.Artist_Phone)
-      .input("City",      sql.NVarChar, rec.Artist_City)
-      .input("State",     sql.NVarChar, rec.Artist_State)
-      .input("Instagram", sql.NVarChar, rec.Instagram_URL)
-      .input("TikTok",    sql.NVarChar, rec.TikTok_URL)
-      .input("Spotify",   sql.NVarChar, rec.Spotify_URL)
-      .input("Apple",     sql.NVarChar, rec.Apple_URL)
-      .input("YouTube",   sql.NVarChar, rec.YouTube_URL)
+      .input('Name',      sql.NVarChar, rec.Artist_Name)
+      .input('Email',     sql.NVarChar, rec.Artist_Email)
+      .input('Phone',     sql.NVarChar, rec.Artist_Phone)
+      .input('City',      sql.NVarChar, rec.Artist_City)
+      .input('State',     sql.NVarChar, rec.Artist_State)
+      .input('Instagram', sql.NVarChar, rec.Instagram_URL)
+      .input('TikTok',    sql.NVarChar, rec.TikTok_URL)
+      .input('Spotify',   sql.NVarChar, rec.Spotify_URL)
+      .input('Apple',     sql.NVarChar, rec.Apple_URL)
+      .input('YouTube',   sql.NVarChar, rec.YouTube_URL)
+      .input('TapID',     sql.NVarChar, tapId)
       .query(`INSERT INTO Artists
         (Artist_Name, Artist_Email, Artist_Phone_Number,
          Artist_City, Artist_State,
          Artist_Instagram_URL, Artist_TikTok_URL,
-         Artist_Spotify_URL, Artist_Apple_URL, Artist_Youtube_URL)
-        VALUES
-        (@Name, @Email, @Phone, @City, @State,
-         @Instagram, @TikTok, @Spotify, @Apple, @YouTube);
+         Artist_Spotify_URL, Artist_Apple_URL, Artist_Youtube_URL, TAP_ID)
+        VALUES (@Name, @Email, @Phone, @City, @State,
+         @Instagram, @TikTok, @Spotify, @Apple, @YouTube, @TapID);
         SELECT SCOPE_IDENTITY() AS Artist_ID;`);
+
 
     const newArtistId = artistInsert.recordset[0].Artist_ID;
 
-    // Create login linked to new Artist_ID
-    await pool.request()
-      .input("Name",     sql.NVarChar, rec.Artist_Name)
-      .input("Email",    sql.NVarChar, rec.Artist_Email)
-      .input("Hash",     sql.NVarChar, rec.Password_Hash)
-      .input("ArtistID", sql.Int,      newArtistId)
-      .query(`INSERT INTO ArtistLogins
-        (Artist_Name, Artist_Email, Password_Hash, Artist_ID)
-        VALUES (@Name, @Email, @Hash, @ArtistID)`);
 
-// Mark staging as approved
+    // Create login record
     await pool.request()
-      .input("ID", sql.Int, req.params.id)
+      .input('Name',     sql.NVarChar, rec.Artist_Name)
+      .input('Email',    sql.NVarChar, rec.Artist_Email)
+      .input('Hash',     sql.NVarChar, rec.Password_Hash)
+      .input('ArtistID', sql.Int,      newArtistId)
+      .input('Role',     sql.NVarChar, role)
+      .input('TapID',    sql.NVarChar, tapId)
+      .query(`INSERT INTO ArtistLogins
+        (Artist_Name, Artist_Email, Password_Hash, Artist_ID, Role, TAP_ID)
+        VALUES (@Name, @Email, @Hash, @ArtistID, @Role, @TapID)`);
+
+
+    // Mark staging approved
+    await pool.request()
+      .input('ID', sql.Int, req.params.id)
       .query("UPDATE Artist_Registration_Staging SET Status = 'Approved' WHERE Staging_ID = @ID");
 
-    res.json({ message: "Artist approved -- login and Artists record created." });
-  } catch (err) { 
-    console.error("APPROVE ERROR:", err.message);
-    res.status(500).json({ message: "Approval failed.", error: err.message }); 
+
+    res.json({ message: 'Approved! TAP ID: ' + tapId });
+  } catch (err) {
+    res.status(500).json({ message: 'Approval failed.', error: err.message });
   }
 });
+
 
 // ADMIN -- reject a registration
 app.post("/api/admin/reject/:id", async (req, res) => {
@@ -591,5 +640,46 @@ app.get("/api/social", authMiddleware, async (req, res) => {
     res.status(500).json({ message: "Error loading social links.", error: err.message });
   }
 });
+
+
+// Generate unique TAP ID
+async function generateTapId(role) {
+  const pool  = await getPool();
+  const year  = new Date().getFullYear();
+  const prefix = {
+    'Artist':       'TAP-ART',
+    'Manager':      'TAP-MGR',
+    'Producer':     'TAP-PRO',
+    'Engineer':     'TAP-ENG',
+    'Record Label': 'TAP-LBL',
+    'Painter':      'TAP-CRE',
+    'Filmmaker':    'TAP-CRE',
+    'Fashion':      'TAP-CRE',
+    'Dancer':       'TAP-CRE',
+    'Photographer': 'TAP-CRE',
+    'Other':        'TAP-CRE'
+  }[role] || 'TAP-USR';
+  const result = await pool.request()
+    .query('SELECT COUNT(*) AS Total FROM ArtistLogins');
+  const num = String(result.recordset[0].Total + 1).padStart(5, '0');
+  return prefix + '-' + year + '-' + num;
+
+
+// ADMIN -- get all users by role
+app.get('/api/admin/all-users', async (req, res) => {
+  const adminKey = req.headers['x-admin-key'];
+  if (adminKey !== process.env.JWT_SECRET)
+    return res.status(403).json({ message: 'Not authorized.' });
+  try {
+    const pool   = await getPool();
+    const result = await pool.request()
+      .query('SELECT Login_ID, Artist_Name, Artist_Email, Role, TAP_ID, Created_Date FROM ArtistLogins ORDER BY Role, Artist_Name');
+    res.json(result.recordset);
+  } catch (err) {
+    res.status(500).json({ message: 'Error.', error: err.message });
+  }
+});
+
+
 
 app.listen(PORT, () => console.log("Server running on port " + PORT));
