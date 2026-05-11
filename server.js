@@ -906,4 +906,107 @@ app.get('/api/admin/collab-requests', async (req, res) => {
 });
 
 
+
+// ADMIN -- get user profile by Artist_ID
+app.get('/api/admin/user-profile/:id', async (req, res) => {
+  const adminKey = req.headers['x-admin-key'];
+  if (adminKey !== process.env.JWT_SECRET)
+    return res.status(403).json({ message: 'Not authorized.' });
+  try {
+    const pool   = await getPool();
+    const result = await pool.request()
+      .input('ID', sql.Int, req.params.id)
+      .query('SELECT * FROM Artists WHERE Artist_ID = @ID');
+    if (result.recordset.length === 0)
+      return res.status(404).json({ message: 'User not found.' });
+    res.json(result.recordset[0]);
+  } catch (err) {
+    res.status(500).json({ message: 'Error.', error: err.message });
+  }
+});
+
+
+
+// ADMIN -- update role specific data
+app.post('/api/admin/update-role-data', async (req, res) => {
+  const adminKey = req.headers['x-admin-key'];
+  if (adminKey !== process.env.JWT_SECRET)
+    return res.status(403).json({ message: 'Not authorized.' });
+  const {
+    artistId, role, genre, ascapId, labelName, labelOwner,
+    rosterSize, managerName, dawSoftware, engineerType,
+    studioName, subField, yearsExp, bio, websiteUrl,
+    portfolioUrl, spotify, apple, instagram, tiktok, youtube
+  } = req.body;
+  try {
+    const pool = await getPool();
+    const updates = [];
+    const inputs  = [];
+    const add = (col, param, type, val) => {
+      if (val !== null && val !== undefined && val !== '') {
+        updates.push(col + ' = @' + param);
+        inputs.push({ name: param, type, value: val });
+      }
+    };
+    add('Genre_Specialty',       'Genre',     sql.NVarChar, genre);
+    add('ASCAP_ID_2',            'Ascap',     sql.NVarChar, ascapId);
+    add('Label_Name',            'Label',     sql.NVarChar, labelName);
+    add('Label_Owner',           'Owner',     sql.NVarChar, labelOwner);
+    add('Roster_Size',           'Roster',    sql.Int,      rosterSize ? parseInt(rosterSize) : null);
+    add('Manager_Name',          'Manager',   sql.NVarChar, managerName);
+    add('DAW_Software',          'DAW',       sql.NVarChar, dawSoftware);
+    add('Engineer_Type',         'EngType',   sql.NVarChar, engineerType);
+    add('Studio_Name',           'Studio',    sql.NVarChar, studioName);
+    add('Creative_SubField',     'SubField',  sql.NVarChar, subField);
+    add('Years_Experience',      'YearsExp',  sql.Int,      yearsExp ? parseInt(yearsExp) : null);
+    add('Bio',                   'Bio',       sql.NVarChar, bio);
+    add('Website_URL',           'Website',   sql.NVarChar, websiteUrl);
+    add('Portfolio_URL',         'Portfolio', sql.NVarChar, portfolioUrl);
+    add('Artist_Spotify_URL',    'Spotify',   sql.NVarChar, spotify);
+    add('Artist_Apple_URL',      'Apple',     sql.NVarChar, apple);
+    add('Artist_Instagram_URL',  'Instagram', sql.NVarChar, instagram);
+    add('Artist_TikTok_URL',     'TikTok',    sql.NVarChar, tiktok);
+    add('Artist_Youtube_URL',    'YouTube',   sql.NVarChar, youtube);
+    if (updates.length === 0)
+      return res.status(400).json({ message: 'Nothing to update.' });
+    const request = pool.request().input('ArtistID', sql.Int, artistId);
+    inputs.forEach(i => request.input(i.name, i.type, i.value));
+    await request.query('UPDATE Artists SET ' + updates.join(', ') + ' WHERE Artist_ID = @ArtistID');
+    res.json({ message: role + ' data updated successfully!' });
+  } catch (err) {
+    res.status(500).json({ message: 'Update failed.', error: err.message });
+  }
+});
+
+
+
+// ADMIN -- get all users with role attributes
+app.get('/api/admin/all-users', async (req, res) => {
+  const adminKey = req.headers['x-admin-key'];
+  if (adminKey !== process.env.JWT_SECRET)
+    return res.status(403).json({ message: 'Not authorized.' });
+  try {
+    const pool   = await getPool();
+    const result = await pool.request()
+      .query(`SELECT
+        l.Login_ID, l.Artist_Name, l.Artist_Email,
+        l.Role, l.TAP_ID, l.Artist_ID, l.Created_Date,
+        a.Artist_City, a.Artist_State,
+        a.Artist_Instagram_URL, a.Artist_TikTok_URL,
+        a.Artist_Spotify_URL, a.Artist_Apple_URL,
+        a.Artist_Youtube_URL,
+        a.Genre_Specialty, a.Creative_Field,
+        a.Studio_Name, a.Label_Name,
+        a.DAW_Software, a.Years_Experience
+        FROM ArtistLogins l
+        LEFT JOIN Artists a ON l.Artist_ID = a.Artist_ID
+        ORDER BY l.Role, l.Artist_Name`);
+    res.json(result.recordset);
+  } catch (err) {
+    res.status(500).json({ message: 'Error.', error: err.message });
+  }
+});
+
+
+
 app.listen(PORT, () => console.log("Server running on port " + PORT));
