@@ -460,10 +460,6 @@ async function openProfile(loginId) {
 }
 
 
-function closeProfileModal() {
-  document.getElementById('profileModal').classList.remove('active');
-}
-
 
 async function sendCollabRequest(receiverLoginId) {
   const token   = localStorage.getItem('artistToken');
