@@ -1,3 +1,9 @@
+/*
+ * Copyright © 2026 BOLAJI B ADEEKO LLC
+ * Unauthorized copying prohibited
+ */
+
+
 // ── Tab switching on login page ─────────────────────────────────
 function showTab(tab) {
   document.querySelectorAll(".tab-content").forEach(el => el.classList.remove("active"));
@@ -318,6 +324,181 @@ function renderSocial(data) {
 }
 
 
+// Add this line at the very end of your loadDashboard function
+loadCollabRequests();
+
+
+// ── Discover Page ────────────────────────────────────────────────
+
+
+async function searchCreatives() {
+  const token    = localStorage.getItem('artistToken');
+  if (!token) { window.location.href = 'index.html'; return; }
+  const name     = document.getElementById('searchName').value.trim();
+  const role     = document.getElementById('searchRole').value;
+  const city     = document.getElementById('searchCity').value.trim();
+  const state    = document.getElementById('searchState').value.trim();
+  const platform = document.getElementById('searchPlatform').value;
+  const params   = new URLSearchParams();
+  if (name)     params.append('name',     name);
+  if (role)     params.append('role',     role);
+  if (city)     params.append('city',     city);
+  if (state)    params.append('state',    state);
+  if (platform) params.append('platform', platform);
+  try {
+    const res  = await fetch('/api/discover?' + params.toString(), {
+      headers: { 'Authorization': token }
+    });
+    const data = await res.json();
+    renderProfiles(data);
+  } catch {
+    document.getElementById('profileGrid').innerHTML =
+      '<p class=no-results>Something went wrong. Try again.</p>';
+  }
+}
+
+
+function clearSearch() {
+  ['searchName','searchCity','searchState'].forEach(id => {
+    document.getElementById(id).value = '';
+  });
+  ['searchRole','searchPlatform'].forEach(id => {
+    document.getElementById(id).selectedIndex = 0;
+  });
+  document.getElementById('profileGrid').innerHTML = '';
+  document.getElementById('resultCount').textContent = '';
+}
+
+
+function renderProfiles(data) {
+  const grid  = document.getElementById('profileGrid');
+  const count = document.getElementById('resultCount');
+  if (!data.length) {
+    grid.innerHTML  = '<p class=no-results>No creatives found. Try a different search.</p>';
+    count.textContent = '';
+    return;
+  }
+  count.textContent = data.length + ' creative' + (data.length !== 1 ? 's' : '') + ' found';
+  grid.innerHTML = data.map(p => {
+    const initials = (p.Artist_Name || 'U').split(' ').map(w => w[0]).join('').toUpperCase().slice(0,2);
+    const location = [p.Artist_City, p.Artist_State].filter(Boolean).join(', ') || 'Location not set';
+    const socials = [
+      { url: p.Artist_Spotify_URL,   bg: '#1DB954', label: 'SP' },
+      { url: p.Artist_Instagram_URL, bg: '#E1306C', label: 'IG' },
+      { url: p.Artist_TikTok_URL,    bg: '#69C9D0', label: 'TT' },
+      { url: p.Artist_Youtube_URL,   bg: '#FF0000', label: 'YT' },
+      { url: p.Artist_Apple_URL,     bg: '#FC3C44', label: 'AM' }
+    ].filter(s => s.url && s.url.trim() !== '');
+
+
+    return '<div class=profile-card onclick="openProfile(' + p.Login_ID + ')">' +
+      '<div class=profile-avatar>' + initials + '</div>' +
+      '<div class=profile-name>' + (p.Artist_Name || 'Unknown') + '</div>' +
+      '<span class=profile-role>' + (p.Role || 'Creative') + '</span><br>' +
+      '<div class=profile-location>&#128205; ' + location + '</div>' +
+      '<div class=profile-tap>' + (p.TAP_ID || '') + '</div>' +
+      '<div class=profile-socials>' +
+      socials.map(s =>
+        '<a href="' + s.url + '" target="_blank" rel="noopener"' +
+        ' class=social-dot style="background:' + s.bg + '"' +
+        ' onclick="event.stopPropagation()">' + s.label + '</a>'
+      ).join('') + '</div>' +
+      '<button class=view-profile-btn onclick="event.stopPropagation(); openProfile(' + p.Login_ID + ')">View Profile + Connect</button>' +
+      '</div>';
+  }).join('');
+}
+
+
+async function openProfile(loginId) {
+  const token = localStorage.getItem('artistToken');
+  try {
+    const res  = await fetch('/api/discover/' + loginId, {
+      headers: { 'Authorization': token }
+    });
+    const p = await res.json();
+    const initials = (p.Artist_Name || 'U').split(' ').map(w => w[0]).join('').toUpperCase().slice(0,2);
+    const location = [p.Artist_City, p.Artist_State, p.Artist_Country].filter(Boolean).join(', ') || 'Not set';
+
+
+    const socialLinks = [
+      { url: p.Artist_Spotify_URL,   color: '#1DB954', name: 'Spotify' },
+      { url: p.Artist_Instagram_URL, color: '#E1306C', name: 'Instagram' },
+      { url: p.Artist_TikTok_URL,    color: '#69C9D0', name: 'TikTok' },
+      { url: p.Artist_Youtube_URL,   color: '#FF0000', name: 'YouTube' },
+      { url: p.Artist_Apple_URL,     color: '#FC3C44', name: 'Apple Music' }
+    ].filter(s => s.url && s.url.trim() !== '');
+
+
+    document.getElementById('profileModalContent').innerHTML =
+      '<div class=pm-avatar>' + initials + '</div>' +
+      '<div class=pm-name>' + (p.Artist_Name || 'Unknown') + '</div>' +
+      '<div class=pm-role><span class=profile-role>' + (p.Role || 'Creative') + '</span></div>' +
+      '<div class=pm-detail><strong>TAP ID:</strong> <span style="font-family:monospace;color:#666">' + (p.TAP_ID || 'Not assigned') + '</span></div>' +
+      '<div class=pm-detail><strong>Location:</strong> ' + location + '</div>' +
+      (p.Signed_2_Label ? '<div class=pm-detail><strong>Label:</strong> ' + p.Signed_2_Label + '</div>' : '') +
+      (p.Manager_Name   ? '<div class=pm-detail><strong>Manager:</strong> ' + p.Manager_Name + '</div>' : '') +
+      '<div class=pm-socials>' +
+      socialLinks.map(s =>
+        '<a href="' + s.url + '" target="_blank" rel="noopener" class=pm-social-link' +
+        ' style="background:' + s.color + '22; border:1px solid ' + s.color + '; color:' + s.color + '">' +
+        s.name + ' &#8594;</a>'
+      ).join('') + '</div>' +
+      '<div class=collab-section>' +
+      '<h3>Send a Collab Request</h3>' +
+      '<textarea id=collabMessage class=collab-textarea' +
+      ' placeholder="Introduce yourself and describe what you want to work on..."></textarea>' +
+      '<button class=gold-btn onclick="sendCollabRequest(' + loginId + ')">' +
+      'Send Request</button>' +
+      '<p id=collabMsg style="margin-top:8px; font-size:0.85rem;"></p>' +
+      '</div>';
+
+
+    document.getElementById('profileModal').classList.add('active');
+  } catch {
+    alert('Could not load profile. Try again.');
+  }
+}
+
+
+function closeProfileModal() {
+  document.getElementById('profileModal').classList.remove('active');
+}
+
+
+async function sendCollabRequest(receiverLoginId) {
+  const token   = localStorage.getItem('artistToken');
+  const message = document.getElementById('collabMessage').value.trim();
+  const msg     = document.getElementById('collabMsg');
+  if (!message) {
+    msg.style.color = '#f44336';
+    msg.textContent = 'Please write a message before sending.';
+    return;
+  }
+  try {
+    const res  = await fetch('/api/collab-request', {
+      method:  'POST',
+      headers: { 'Authorization': token, 'Content-Type': 'application/json' },
+      body:    JSON.stringify({ receiverLoginId, message })
+    });
+    const data = await res.json();
+    msg.style.color = res.ok ? '#4CAF50' : '#f44336';
+    msg.textContent = data.message;
+  } catch {
+    msg.textContent = 'Something went wrong. Try again.';
+  }
+}
+
+
+// Auto load on discover page
+if (document.getElementById('profileGrid')) {
+  const token = localStorage.getItem('artistToken');
+  if (!token) window.location.href = 'index.html';
+  searchCreatives();
+}
+
+
+
+
 // ── Profile Modal ────────────────────────────────────────────────
 async function openProfileModal() {
   const token = localStorage.getItem("artistToken");
@@ -488,6 +669,98 @@ async function deleteSong(id) {
   alert(data.message);
   loadDashboard();
 }
+
+
+// ── Collab Requests ─────────────────────────────────────────────
+function showCollabTab(tab) {
+  document.getElementById('collabReceived').style.display = tab === 'received' ? 'block' : 'none';
+  document.getElementById('collabSent').style.display     = tab === 'sent'     ? 'block' : 'none';
+}
+
+
+async function loadCollabRequests() {
+  const token = localStorage.getItem('artistToken');
+  if (!token) return;
+  try {
+    const res  = await fetch('/api/collab-requests', {
+      headers: { 'Authorization': token }
+    });
+    const data = await res.json();
+    renderCollabReceived(data.received || []);
+    renderCollabSent(data.sent || []);
+  } catch { }
+}
+
+
+function renderCollabReceived(data) {
+  const el = document.getElementById('collabReceived');
+  if (!el) return;
+  if (!data.length) {
+    el.innerHTML = '<p class=no-data>No collab requests received yet.</p>'; return;
+  }
+  el.innerHTML = data.map(r =>
+    '<div style="background:#1a1a1a; border:1px solid #2a2a2a; border-left:4px solid ' +
+    (r.Status === 'Accepted' ? '#2E7D32' : r.Status === 'Declined' ? '#B71C1C' : '#D4AF37') +
+    '; border-radius:8px; padding:16px; margin-bottom:12px;">' +
+    '<div style="display:flex; justify-content:space-between; align-items:flex-start;">' +
+    '<div>' +
+    '<div style="color:#eee; font-weight:600;">' + r.Sender_Name + '</div>' +
+    '<div style="color:#666; font-size:0.8rem;">' + (r.Sender_Role || '') + ' &bull; ' + (r.Sender_TAP_ID || '') + '</div>' +
+    '<div style="color:#aaa; font-size:0.9rem; margin:8px 0;">' + (r.Message || '') + '</div>' +
+    '<div style="color:#555; font-size:0.75rem;">' + new Date(r.Sent_At).toLocaleDateString() + '</div>' +
+    '</div>' +
+    '<span style="padding:3px 10px; border-radius:12px; font-size:0.75rem; font-weight:bold;' +
+    'background:' + (r.Status === 'Accepted' ? '#1B5E2033' : r.Status === 'Declined' ? '#B71C1C33' : '#7B590033') + ';' +
+    'color:' + (r.Status === 'Accepted' ? '#4CAF50' : r.Status === 'Declined' ? '#EF5350' : '#D4AF37') + ';">' +
+    r.Status + '</span>' +
+    '</div>' +
+    (r.Status === 'Pending' ?
+      '<div style="display:flex; gap:8px; margin-top:12px;">' +
+      '<button class=approve-btn onclick="respondToCollab(' + r.Request_ID + ',\'Accepted\')">Accept</button>' +
+      '<button class=reject-btn  onclick="respondToCollab(' + r.Request_ID + ',\'Declined\')">Decline</button>' +
+      '</div>' : '') +
+    '</div>'
+  ).join('');
+}
+
+
+function renderCollabSent(data) {
+  const el = document.getElementById('collabSent');
+  if (!el) return;
+  if (!data.length) {
+    el.innerHTML = '<p class=no-data>You have not sent any collab requests yet.</p>'; return;
+  }
+  el.innerHTML = data.map(r =>
+    '<div style="background:#1a1a1a; border:1px solid #2a2a2a; border-radius:8px; padding:16px; margin-bottom:12px;">' +
+    '<div style="display:flex; justify-content:space-between;">' +
+    '<div>' +
+    '<div style="color:#eee; font-weight:600;">To: ' + r.Receiver_Name + '</div>' +
+    '<div style="color:#666; font-size:0.8rem;">' + (r.Receiver_Role || '') + '</div>' +
+    '<div style="color:#aaa; font-size:0.9rem; margin:8px 0;">' + (r.Message || '') + '</div>' +
+    '<div style="color:#555; font-size:0.75rem;">Sent: ' + new Date(r.Sent_At).toLocaleDateString() + '</div>' +
+    '</div>' +
+    '<span style="padding:3px 10px; border-radius:12px; font-size:0.75rem; font-weight:bold;' +
+    'background:' + (r.Status === 'Accepted' ? '#1B5E2033' : r.Status === 'Declined' ? '#B71C1C33' : '#7B590033') + ';' +
+    'color:' + (r.Status === 'Accepted' ? '#4CAF50' : r.Status === 'Declined' ? '#EF5350' : '#D4AF37') + ';">' +
+    r.Status + '</span>' +
+    '</div></div>'
+  ).join('');
+}
+
+
+async function respondToCollab(requestId, status) {
+  const token = localStorage.getItem('artistToken');
+  const res   = await fetch('/api/collab-request/' + requestId, {
+    method:  'PUT',
+    headers: { 'Authorization': token, 'Content-Type': 'application/json' },
+    body:    JSON.stringify({ status })
+  });
+  const data = await res.json();
+  alert(data.message);
+  loadCollabRequests();
+}
+
+
 
 
 // Auto-run when on dashboard page

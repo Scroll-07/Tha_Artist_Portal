@@ -55,6 +55,7 @@
         <button class="update-profile-btn" onclick="switchAdminTab('pending')">Registrations</button>
         <button class="update-profile-btn" onclick="switchAdminTab('data')">Data Entry</button>
         <button class="update-profile-btn" onclick="switchAdminTab('users')">All Users</button>
+        <button class='update-profile-btn' onclick='switchAdminTab("collabs")'>Collabs</button>
         <button class="logout-btn" onclick="adminLogout()">Logout</button>
       </div>
     </div>
@@ -148,6 +149,11 @@
     <div id="allUsersSection" style="display:none">
       <div id="allUsersList"></div>
     </div>
+<div id='collabsSection' style='display:none'>
+  <div class='admin-container'>
+    <div id='adminCollabsList'></div>
+  </div>
+</div>
 
   </div>
 
@@ -391,7 +397,55 @@
         loadAllUsers();
       }
     }
+
+async function loadAdminCollabs() {
+  const res  = await fetch('/api/admin/collab-requests', {
+    headers: { 'x-admin-key': adminKey }
+  });
+  const data = await res.json();
+  const list = document.getElementById('adminCollabsList');
+  if (!data.length) {
+    list.innerHTML = '<p class=empty-msg>No collab requests yet.</p>'; return;
+  }
+  list.innerHTML = data.map(r =>
+    '<div class=pending-card>' +
+    '<div class=artist-info>' +
+    '<h3>' + r.Sender_Name + ' &#8594; ' + r.Receiver_Name +
+    ' <span class=badge style="background:#333;color:#D4AF37">' + r.Status + '</span></h3>' +
+    '<p>' + (r.Sender_Role || '') + ' to ' + (r.Receiver_Role || '') + '</p>' +
+    '<p style="color:#aaa; font-size:0.85rem; margin-top:4px;">' + (r.Message || '') + '</p>' +
+    '<p style="color:#555; font-size:0.75rem;">' + new Date(r.Sent_At).toLocaleDateString() + '</p>' +
+    '</div></div>'
+  ).join('');
+}
+
+
+// Add this case to your switchAdminTab function:
+// if (tab === 'collabs') {
+//   document.getElementById('pendingList').style.display      = 'none';
+//   document.getElementById('adminDataSection').style.display = 'none';
+//   document.getElementById('allUsersSection').style.display  = 'none';
+//   document.getElementById('collabsSection').style.display   = 'block';
+//   document.getElementById('adminPanelTitle').textContent    = 'Collab Requests';
+//   loadAdminCollabs();
+// }
+
+
   </script>
+
+<!-- Copyright Footer -->
+<footer style="
+  text-align: center;
+  padding: 20px;
+  margin-top: 40px;
+  border-top: 1px solid #222;
+  color: #444;
+  font-size: 0.75rem;
+  letter-spacing: 1px;
+  font-family: Arial, sans-serif;">
+  &copy; 2026 B.B.ALLC. All Rights Reserved.
+</footer>
+
 
 </body>
 </html>

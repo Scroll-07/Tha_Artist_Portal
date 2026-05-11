@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang='en'>
+<head>
+  <meta charset='UTF-8'>
+  <meta name='viewport' content='width=device-width, initial-scale=1.0'>
+  <title>Discover -- Tha Artist Portal</title>
+  <link rel='stylesheet' href='style.css'>
+  <link rel='manifest' href='/manifest.json'>
+  <meta name='theme-color' content='#B8860B'>
+  <style>
+    .discover-header {
+      background:#1a1a1a; border-bottom:2px solid #B8860B;
+      padding:20px 32px;
+      display:flex; justify-content:space-between; align-items:center;
+    }
+    .search-panel {
+      background:#1a1a1a; border:1px solid #2a2a2a;
+      border-radius:12px; padding:24px; margin-bottom:28px;
+    }
+    .search-grid {
+      display:grid; grid-template-columns:repeat(auto-fill, minmax(180px,1fr));
+      gap:12px; margin-bottom:16px;
+    }
+    .search-grid input, .search-grid select {
+      background:#222; border:1px solid #444; border-radius:6px;
+      padding:10px 12px; color:#eee; font-size:0.9rem; width:100%;
+    }
+    .search-grid input:focus, .search-grid select:focus {
+      outline:none; border-color:#D4AF37;
+    }
+    .profile-grid {
+      display:grid; grid-template-columns:repeat(auto-fill, minmax(280px,1fr));
+      gap:20px;
+    }
+    .profile-card {
+      background:#1a1a1a; border:1px solid #2a2a2a;
+      border-radius:12px; padding:20px;
+      transition:border-color 0.2s, transform 0.15s;
+      cursor:pointer;
+    }
+    .profile-card:hover {
+      border-color:#B8860B; transform:translateY(-2px);
+    }
+    .profile-avatar {
+      width:56px; height:56px; border-radius:50%;
+      background:linear-gradient(135deg, #B8860B, #D4AF37);
+      display:flex; align-items:center; justify-content:center;
+      font-size:1.4rem; font-weight:bold; color:#000;
+      margin-bottom:12px;
+    }
+    .profile-name {
+      color:#eee; font-size:1rem; font-weight:600; margin-bottom:4px;
+    }
+    .profile-role {
+      display:inline-block; padding:2px 10px;
+      background:#B8860B22; border:1px solid #B8860B;
+      border-radius:20px; color:#D4AF37;
+      font-size:0.75rem; font-weight:bold;
+      text-transform:uppercase; margin-bottom:8px;
+    }
+    .profile-location {
+      color:#666; font-size:0.85rem; margin-bottom:10px;
+    }
+    .profile-tap { color:#444; font-size:0.75rem; font-family:monospace; }
+    .profile-socials { display:flex; gap:8px; margin-top:10px; flex-wrap:wrap; }
+    .social-dot {
+      width:28px; height:28px; border-radius:50%;
+      display:flex; align-items:center; justify-content:center;
+      font-size:0.7rem; font-weight:bold; color:#fff; text-decoration:none;
+    }
+    .view-profile-btn {
+      width:100%; margin-top:14px; padding:8px;
+      background:transparent; border:1px solid #333;
+      color:#888; border-radius:6px; cursor:pointer;
+      font-size:0.85rem; transition:all 0.2s;
+    }
+    .view-profile-btn:hover { border-color:#D4AF37; color:#D4AF37; }
+    .profile-modal-overlay {
+      display:none; position:fixed; top:0; left:0;
+      width:100%; height:100%; background:rgba(0,0,0,0.9);
+      z-index:1000; overflow-y:auto;
+    }
+    .profile-modal-overlay.active { display:block; }
+    .profile-modal-box {
+      max-width:600px; margin:40px auto; background:#1a1a1a;
+      border:1px solid #B8860B; border-radius:12px; padding:36px;
+    }
+    .pm-avatar {
+      width:80px; height:80px; border-radius:50%;
+      background:linear-gradient(135deg,#B8860B,#D4AF37);
+      display:flex; align-items:center; justify-content:center;
+      font-size:2rem; font-weight:bold; color:#000; margin:0 auto 16px;
+    }
+    .pm-name { color:#D4AF37; font-size:1.5rem; font-weight:bold; text-align:center; }
+    .pm-role { text-align:center; margin:8px 0 16px; }
+    .pm-detail { display:flex; gap:8px; margin-bottom:8px; color:#aaa; font-size:0.9rem; }
+    .pm-detail strong { color:#eee; min-width:100px; }
+    .pm-socials { display:flex; gap:10px; flex-wrap:wrap; margin:16px 0; }
+    .pm-social-link {
+      display:flex; align-items:center; gap:6px;
+      padding:6px 14px; border-radius:20px;
+      text-decoration:none; font-size:0.8rem; font-weight:500;
+    }
+    .collab-section { margin-top:24px; border-top:1px solid #333; padding-top:20px; }
+    .collab-section h3 { color:#D4AF37; margin-bottom:12px; }
+    .collab-textarea {
+      width:100%; min-height:80px; background:#222;
+      border:1px solid #444; border-radius:6px;
+      padding:10px; color:#eee; font-size:0.9rem;
+      resize:vertical; margin-bottom:12px; box-sizing:border-box;
+    }
+    .no-results {
+      text-align:center; color:#555; font-style:italic;
+      padding:60px 20px; font-size:1rem;
+    }
+    .result-count { color:#666; font-size:0.85rem; margin-bottom:16px; }
+  </style>
+</head>
+<body class='dashboard-body'>
+
+
+  <header class='discover-header'>
+    <div>
+      <h1 class='portal-title small'>Tha Artist Portal</h1>
+      <p style='color:#888; font-size:0.85rem;'>Discover and connect with creatives</p>
+    </div>
+    <div style='display:flex; gap:10px;'>
+      <a href='dashboard.html' class='update-profile-btn'
+         style='text-decoration:none; display:flex; align-items:center;'>My Dashboard</a>
+      <button class='logout-btn' onclick='logout()'>Logout</button>
+    </div>
+  </header>
+
+
+  <main class='dash-main'>
+
+
+    <!-- SEARCH PANEL -->
+    <section class='search-panel'>
+      <h2 class='section-title' style='margin-bottom:16px;'>Find Creatives</h2>
+      <div class='search-grid'>
+        <input id='searchName'     placeholder='Name or stage name'>
+        <select id='searchRole'>
+          <option value=''>All Roles</option>
+          <option value='Artist'>Artist</option>
+          <option value='Manager'>Manager</option>
+          <option value='Producer'>Producer</option>
+          <option value='Engineer'>Engineer</option>
+          <option value='Record Label'>Record Label</option>
+          <option value='Painter'>Painter</option>
+          <option value='Photographer'>Photographer</option>
+          <option value='Filmmaker'>Filmmaker</option>
+          <option value='Fashion Designer'>Fashion Designer</option>
+          <option value='Dancer'>Dancer</option>
+          <option value='Other'>Other Creative</option>
+        </select>
+        <input id='searchCity'     placeholder='City'>
+        <input id='searchState'    placeholder='State'>
+        <select id='searchPlatform'>
+          <option value=''>All Platforms</option>
+          <option value='Spotify'>On Spotify</option>
+          <option value='Apple Music'>On Apple Music</option>
+          <option value='Instagram'>On Instagram</option>
+          <option value='TikTok'>On TikTok</option>
+          <option value='YouTube'>On YouTube</option>
+        </select>
+      </div>
+      <div style='display:flex; gap:12px;'>
+        <button class='gold-btn' style='flex:1' onclick='searchCreatives()'>Search</button>
+        <button class='cancel-btn' style='flex:1' onclick='clearSearch()'>Clear</button>
+      </div>
+    </section>
+
+
+    <p id='resultCount' class='result-count'></p>
+
+
+    <!-- RESULTS GRID -->
+    <div id='profileGrid' class='profile-grid'></div>
+
+
+  </main>
+
+
+  <!-- PROFILE MODAL -->
+  <div id='profileModal' class='profile-modal-overlay'>
+    <div class='profile-modal-box'>
+      <div id='profileModalContent'></div>
+      <div style='display:flex; gap:12px; margin-top:20px;'>
+        <button class='cancel-btn' style='flex:1' onclick='closeProfileModal()'>Close</button>
+      </div>
+    </div>
+  </div>
+
+
+  <script src='app.js'></script>
+
+
+<!-- Copyright Footer -->
+<footer style="
+  text-align: center;
+  padding: 20px;
+  margin-top: 40px;
+  border-top: 1px solid #222;
+  color: #444;
+  font-size: 0.75rem;
+  letter-spacing: 1px;
+  font-family: Arial, sans-serif;">
+  &copy; 2026 B.B.ALLC. All Rights Reserved.
+</footer>
+  
+
+</body>
+</html>

@@ -1,3 +1,9 @@
+/*
+ * Copyright © 2026 BOLAJI B ADEEKO LLC
+ * Unauthorized copying prohibited
+ */
+
+
 require("dotenv").config();
 const express = require("express");
 const sql     = require("mssql");
@@ -681,6 +687,223 @@ app.get('/api/admin/all-users', async (req, res) => {
   }
 });
 
+
+
+// DISCOVER -- Search all creatives
+app.get('/api/discover', authMiddleware, async (req, res) => {
+  const { name, role, city, state, genre, platform } = req.query;
+  try {
+    const pool = await getPool();
+    const request = pool.request();
+    let where = ['l.Login_ID != @MyID'];
+    request.input('MyID', sql.Int, req.artist.loginId);
+
+
+    if (name) {
+      where.push('l.Artist_Name LIKE @Name');
+      request.input('Name', sql.NVarChar, '%' + name + '%');
+    }
+    if (role && role !== 'All') {
+      where.push('l.Role = @Role');
+      request.input('Role', sql.NVarChar, role);
+    }
+    if (city) {
+      where.push('a.Artist_City LIKE @City');
+      request.input('City', sql.NVarChar, '%' + city + '%');
+    }
+    if (state) {
+      where.push('a.Artist_State LIKE @State');
+      request.input('State', sql.NVarChar, '%' + state + '%');
+    }
+    if (genre) {
+      where.push('a.Genre_ID IS NOT NULL');
+    }
+    if (platform === 'Spotify') {
+      where.push('a.Artist_Spotify_URL IS NOT NULL');
+    }
+    if (platform === 'Instagram') {
+      where.push('a.Artist_Instagram_URL IS NOT NULL');
+    }
+    if (platform === 'TikTok') {
+      where.push('a.Artist_TikTok_URL IS NOT NULL');
+    }
+    if (platform === 'YouTube') {
+      where.push('a.Artist_Youtube_URL IS NOT NULL');
+    }
+    if (platform === 'Apple Music') {
+      where.push('a.Artist_Apple_URL IS NOT NULL');
+    }
+
+
+    const query = `
+      SELECT TOP 50
+        l.Login_ID, l.Artist_Name, l.Role, l.TAP_ID,
+        a.Artist_City, a.Artist_State, a.Artist_Country,
+        a.Artist_Instagram_URL, a.Artist_TikTok_URL,
+        a.Artist_Spotify_URL, a.Artist_Apple_URL,
+        a.Artist_Youtube_URL
+      FROM ArtistLogins l
+      LEFT JOIN Artists a ON l.Artist_ID = a.Artist_ID
+      WHERE ${where.join(' AND ')}
+      ORDER BY l.Artist_Name ASC`;
+
+
+    const result = await request.query(query);
+    res.json(result.recordset);
+  } catch (err) {
+    res.status(500).json({ message: 'Search failed.', error: err.message });
+  }
+});
+
+
+
+// Get public profile by Login_ID
+app.get('/api/discover/:id', authMiddleware, async (req, res) => {
+  try {
+    const pool   = await getPool();
+    const result = await pool.request()
+      .input('ID', sql.Int, req.params.id)
+      .query(`
+        SELECT
+          l.Login_ID, l.Artist_Name, l.Role, l.TAP_ID, l.Created_Date,
+          a.Artist_City, a.Artist_State, a.Artist_Country,
+          a.Artist_Phone_Number,
+          a.Artist_Instagram_URL, a.Artist_TikTok_URL,
+          a.Artist_Spotify_URL, a.Artist_Apple_URL,
+          a.Artist_Youtube_URL, a.Signed_2_Label,
+          a.Manager_Name, a.ASCAP_ID
+        FROM ArtistLogins l
+        LEFT JOIN Artists a ON l.Artist_ID = a.Artist_ID
+        WHERE l.Login_ID = @ID`);
+    if (result.recordset.length === 0)
+      return res.status(404).json({ message: 'Profile not found.' });
+    res.json(result.recordset[0]);
+  } catch (err) {
+    res.status(500).json({ message: 'Error loading profile.', error: err.message });
+  }
+});
+
+
+
+// Send collab request
+app.post('/api/collab-request', authMiddleware, async (req, res) => {
+  const { receiverLoginId, message } = req.body;
+  if (!receiverLoginId)
+    return res.status(400).json({ message: 'Receiver is required.' });
+  try {
+    const pool = await getPool();
+
+
+    // Check not sending to yourself
+    if (parseInt(receiverLoginId) === req.artist.loginId)
+      return res.status(400).json({ message: 'You cannot send a request to yourself.' });
+
+
+    // Check for existing pending request
+    const existing = await pool.request()
+      .input('SenderID',   sql.Int, req.artist.loginId)
+      .input('ReceiverID', sql.Int, receiverLoginId)
+      .query("SELECT 1 FROM Collab_Requests WHERE Sender_Login_ID = @SenderID AND Receiver_Login_ID = @ReceiverID AND Status = 'Pending'");
+    if (existing.recordset.length > 0)
+      return res.status(409).json({ message: 'You already sent a request to this person.' });
+
+
+    // Get receiver info
+    const receiver = await pool.request()
+      .input('ID', sql.Int, receiverLoginId)
+      .query('SELECT Artist_Name, TAP_ID, Role FROM ArtistLogins WHERE Login_ID = @ID');
+    if (receiver.recordset.length === 0)
+      return res.status(404).json({ message: 'User not found.' });
+    const rec = receiver.recordset[0];
+
+
+    await pool.request()
+      .input('SenderID',    sql.Int,      req.artist.loginId)
+      .input('SenderName',  sql.NVarChar, req.artist.name)
+      .input('SenderTAP',   sql.NVarChar, req.artist.tapId  || null)
+      .input('SenderRole',  sql.NVarChar, req.artist.role   || null)
+      .input('SenderEmail', sql.NVarChar, req.artist.email  || null)
+      .input('ReceiverID',  sql.Int,      receiverLoginId)
+      .input('ReceiverName',sql.NVarChar, rec.Artist_Name)
+      .input('ReceiverTAP', sql.NVarChar, rec.TAP_ID        || null)
+      .input('ReceiverRole',sql.NVarChar, rec.Role          || null)
+      .input('Message',     sql.NVarChar, message           || null)
+      .query(`INSERT INTO Collab_Requests
+        (Sender_Login_ID, Sender_Name, Sender_TAP_ID, Sender_Role, Sender_Email,
+         Receiver_Login_ID, Receiver_Name, Receiver_TAP_ID, Receiver_Role, Message)
+        VALUES
+        (@SenderID, @SenderName, @SenderTAP, @SenderRole, @SenderEmail,
+         @ReceiverID, @ReceiverName, @ReceiverTAP, @ReceiverRole, @Message)`);
+
+
+    res.json({ message: 'Collab request sent to ' + rec.Artist_Name + '!' });
+  } catch (err) {
+    res.status(500).json({ message: 'Failed to send request.', error: err.message });
+  }
+});
+
+
+
+// Get collab requests for logged-in user
+app.get('/api/collab-requests', authMiddleware, async (req, res) => {
+  try {
+    const pool = await getPool();
+    const sent = await pool.request()
+      .input('MyID', sql.Int, req.artist.loginId)
+      .query(`SELECT * FROM Collab_Requests
+              WHERE Sender_Login_ID = @MyID
+              ORDER BY Sent_At DESC`);
+    const received = await pool.request()
+      .input('MyID2', sql.Int, req.artist.loginId)
+      .query(`SELECT * FROM Collab_Requests
+              WHERE Receiver_Login_ID = @MyID2
+              ORDER BY Sent_At DESC`);
+    res.json({ sent: sent.recordset, received: received.recordset });
+  } catch (err) {
+    res.status(500).json({ message: 'Error loading requests.', error: err.message });
+  }
+});
+
+
+
+// Accept or decline a collab request
+app.put('/api/collab-request/:id', authMiddleware, async (req, res) => {
+  const { status } = req.body; // 'Accepted' or 'Declined'
+  if (!['Accepted','Declined'].includes(status))
+    return res.status(400).json({ message: 'Status must be Accepted or Declined.' });
+  try {
+    const pool = await getPool();
+    await pool.request()
+      .input('ID',     sql.Int,      req.params.id)
+      .input('MyID',   sql.Int,      req.artist.loginId)
+      .input('Status', sql.NVarChar, status)
+      .query(`UPDATE Collab_Requests
+              SET Status = @Status, Responded_At = GETDATE()
+              WHERE Request_ID = @ID
+              AND Receiver_Login_ID = @MyID`);
+    res.json({ message: 'Request ' + status.toLowerCase() + '.' });
+  } catch (err) {
+    res.status(500).json({ message: 'Error updating request.', error: err.message });
+  }
+});
+
+
+
+
+// ADMIN -- get all collab requests
+app.get('/api/admin/collab-requests', async (req, res) => {
+  const adminKey = req.headers['x-admin-key'];
+  if (adminKey !== process.env.JWT_SECRET)
+    return res.status(403).json({ message: 'Not authorized.' });
+  try {
+    const pool   = await getPool();
+    const result = await pool.request()
+      .query(`SELECT * FROM Collab_Requests ORDER BY Sent_At DESC`);
+    res.json(result.recordset);
+  } catch (err) {
+    res.status(500).json({ message: 'Error.', error: err.message });
+  }
+});
 
 
 app.listen(PORT, () => console.log("Server running on port " + PORT));

@@ -28,6 +28,15 @@
     <button class='update-profile-btn' onclick='openProfileModal()'>Update Profile</button>
     <button class='logout-btn' onclick='logout()'>Logout</button>
   </div>
+  <div style='display:flex; gap:10px;'>
+  <a href='discover.html' class='update-profile-btn'
+     style='text-decoration:none; display:flex; align-items:center;'>
+     &#128269; Discover
+  </a>
+  <button class='update-profile-btn' onclick='openProfileModal()'>Update Profile</button>
+  <button class='logout-btn' onclick='logout()'>Logout</button>
+</div>
+
 </header>
 
 
@@ -103,6 +112,21 @@
       <div id="contractsContainer" class="cards-row"></div>
     </section>
 
+<!-- COLLAB REQUESTS -->
+<section class='dash-section'>
+  <h2 class='section-title'>Collab Requests</h2>
+  <div style='display:flex; gap:16px; margin-bottom:16px;'>
+    <button class='update-profile-btn' onclick='showCollabTab("received")'
+            id='tabReceived'>Received</button>
+    <button class='update-profile-btn' onclick='showCollabTab("sent")'
+            id='tabSent'>Sent</button>
+  </div>
+  <div id='collabReceived'></div>
+  <div id='collabSent' style='display:none'></div>
+</section>
+
+
+
   </main>
 
   <!-- PROFILE MODAL -->
@@ -136,5 +160,20 @@
   </div>
 
   <script src="app.js"></script>
+
+<!-- Copyright Footer -->
+<footer style="
+  text-align: center;
+  padding: 20px;
+  margin-top: 40px;
+  border-top: 1px solid #222;
+  color: #444;
+  font-size: 0.75rem;
+  letter-spacing: 1px;
+  font-family: Arial, sans-serif;">
+  &copy; 2026 B.B.ALLC. All Rights Reserved.
+</footer>
+
+
 </body>
 </html>
