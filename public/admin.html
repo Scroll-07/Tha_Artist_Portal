@@ -6,7 +6,7 @@
   <title>Admin -- Tha Artist Portal</title>
   <link rel="stylesheet" href="style.css">
   <style>
-    .admin-container { max-width: 900px; margin: 40px auto; padding: 0 24px; }
+    .admin-container { max-width: 960px; margin: 40px auto; padding: 0 24px; }
     .admin-login { max-width: 420px; margin: 80px auto; background: #1a1a1a;
       border: 1px solid #B8860B; border-radius: 12px; padding: 40px; }
     .pending-card { background: #1a1a1a; border: 1px solid #333;
@@ -30,17 +30,23 @@
     .badge-rejected { background: #B71C1C; color: #FFCDD2; }
     .empty-msg { color: #555; font-style: italic; padding: 24px 0; text-align: center; }
     .admin-header { display: flex; justify-content: space-between; align-items: center;
-      margin-bottom: 28px; border-bottom: 2px solid #B8860B; padding-bottom: 16px; }
+      margin-bottom: 28px; border-bottom: 2px solid #B8860B; padding-bottom: 16px; flex-wrap: wrap; gap: 12px; }
     .admin-header h2 { color: #D4AF37; }
+    .inp { background:#222; border:1px solid #444; border-radius:6px; padding:10px; color:#eee; width:100%; box-sizing:border-box; }
+    .grid2 { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+    .full { grid-column:1/-1; }
   </style>
 </head>
 <body>
 
+<!-- Copyright -->
+<!-- Copyright 2026 BOLAJI B ADEEKO LLC -- Unauthorized copying prohibited -->
+
   <!-- ADMIN LOGIN -->
   <div id="adminLoginSection" class="admin-login">
     <h1 class="portal-title" style="margin-bottom:24px">Admin Panel</h1>
-    <input type="password" id="adminKeyInput" placeholder="Enter Admin Key">
-    <button class="gold-btn" onclick="adminLogin()">Enter</button>
+    <input type="password" id="adminKeyInput" placeholder="Enter Admin Key" class="inp" style="margin-bottom:12px;">
+    <button class="gold-btn" style="width:100%" onclick="adminLogin()">Enter</button>
     <p id="adminLoginMsg" class="msg"></p>
   </div>
 
@@ -49,30 +55,26 @@
     <div class="admin-header">
       <div>
         <h2 id="adminPanelTitle">Pending Registrations</h2>
-        <p style="color:#888;font-size:0.9rem">Review and approve or reject artist signups</p>
+        <p style="color:#888;font-size:0.9rem">Review and manage Tha Artist Portal</p>
       </div>
-      <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
+      <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
         <button class="update-profile-btn" onclick="switchAdminTab('pending')">Registrations</button>
         <button class="update-profile-btn" onclick="switchAdminTab('data')">Data Entry</button>
         <button class="update-profile-btn" onclick="switchAdminTab('users')">All Users</button>
-        <button class='update-profile-btn' onclick='switchAdminTab("collabs")'>Collabs</button>
+        <button class="update-profile-btn" onclick="switchAdminTab('collabs')">Collabs</button>
         <button class="logout-btn" onclick="adminLogout()">Logout</button>
       </div>
     </div>
 
-<!-- Pending registrations list -->
+    <!-- TAB: Pending -->
     <div id="pendingList"></div>
 
-    <!-- Data entry section -->
+    <!-- TAB: Data Entry -->
     <div id="adminDataSection" style="display:none">
-      <!-- Role Selector -->
-      <div style="background:#1a1a1a; border:1px solid #333;
-        border-left:4px solid #D4AF37; border-radius:8px;
-        padding:24px; margin-bottom:24px;">
-        <h3 style="color:#D4AF37; margin-bottom:16px;">Select Role to Manage</h3>
-        <select id="adminRoleSelect" onchange="switchAdminRole()"
-          style="background:#222; border:1px solid #444; border-radius:6px;
-                 padding:12px; color:#eee; width:100%; font-size:1rem;">
+
+      <div style="background:#1a1a1a;border:1px solid #333;border-left:4px solid #D4AF37;border-radius:8px;padding:24px;margin-bottom:24px;">
+        <h3 style="color:#D4AF37;margin-bottom:16px;">Select Role to Manage</h3>
+        <select id="adminRoleSelect" onchange="switchAdminRole()" class="inp">
           <option value="">-- Select a Role --</option>
           <optgroup label="Music Industry">
             <option value="Artist">Artist / Musician</option>
@@ -102,120 +104,230 @@
         </select>
       </div>
 
-      <!-- Dynamic role form renders here -->
       <div id="roleFormContainer"></div>
 
-      <!-- Music only sections -->
       <div id="musicDataSection" style="display:none">
 
-        <!-- ADD SONG -->
-        <div style="background:#1a1a1a; border:1px solid #333;
-          border-left:4px solid #B8860B; border-radius:8px; padding:24px; margin-bottom:24px;">
-          <h3 style="color:#D4AF37; margin-bottom:16px;">Add Song</h3>
-          <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
-            <select id="aSongArtist" style="background:#222; border:1px solid #444;
-              border-radius:6px; padding:10px; color:#eee; grid-column:1/-1;">
-              <option value="">-- Select Artist --</option>
-            </select>
-            <input id="aSongName"     placeholder="Song Name *"           style="background:#222; border:1px solid #444; border-radius:6px; padding:10px; color:#eee;">
-            <input id="aSongAlbum"    placeholder="Album"                 style="background:#222; border:1px solid #444; border-radius:6px; padding:10px; color:#eee;">
-            <input id="aSongDate"     placeholder="Release Date" type="date" style="background:#222; border:1px solid #444; border-radius:6px; padding:10px; color:#eee;">
-            <input id="aSongDuration" placeholder="Duration (e.g. 3:45)" style="background:#222; border:1px solid #444; border-radius:6px; padding:10px; color:#eee;">
-            <input id="aSongISRC"     placeholder="ISRC Code"             style="background:#222; border:1px solid #444; border-radius:6px; padding:10px; color:#eee;">
-            <input id="aSongFeatured" placeholder="Featured Artist"       style="background:#222; border:1px solid #444; border-radius:6px; padding:10px; color:#eee;">
-            <input id="aSongWriters"  placeholder="Writers Credit"        style="background:#222; border:1px solid #444; border-radius:6px; padding:10px; color:#eee;">
-            <input id="aSongProducer" placeholder="Producer Name"         style="background:#222; border:1px solid #444; border-radius:6px; padding:10px; color:#eee;">
+        <div style="background:#1a1a1a;border:1px solid #333;border-left:4px solid #B8860B;border-radius:8px;padding:24px;margin-bottom:24px;">
+          <h3 style="color:#D4AF37;margin-bottom:16px;">Add Song</h3>
+          <div class="grid2">
+            <select id="aSongArtist" class="inp full"><option value="">-- Select Artist --</option></select>
+            <input id="aSongName"     class="inp" placeholder="Song Name *">
+            <input id="aSongAlbum"    class="inp" placeholder="Album">
+            <input id="aSongDate"     class="inp" placeholder="Release Date" type="date">
+            <input id="aSongDuration" class="inp" placeholder="Duration (e.g. 3:45)">
+            <input id="aSongISRC"     class="inp" placeholder="ISRC Code">
+            <input id="aSongFeatured" class="inp" placeholder="Featured Artist">
+            <input id="aSongWriters"  class="inp" placeholder="Writers Credit">
+            <input id="aSongProducer" class="inp" placeholder="Producer Name">
           </div>
-          <p id="adminSongMsg" style="margin-top:12px; font-size:0.9rem;"></p>
-          <button class="approve-btn" style="margin-top:16px; width:100%;" onclick="adminAddSong()">Add Song</button>
+          <p id="adminSongMsg" style="margin-top:12px;font-size:0.9rem;"></p>
+          <button class="approve-btn" style="margin-top:16px;width:100%;" onclick="adminAddSong()">Add Song</button>
         </div>
 
-        <!-- ADD STREAMS -->
-        <div style="background:#1a1a1a; border:1px solid #333;
-          border-left:4px solid #1565C0; border-radius:8px; padding:24px; margin-bottom:24px;">
-          <h3 style="color:#42A5F5; margin-bottom:16px;">Add Stream Data</h3>
-          <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
-            <select id="aStreamArtist" style="background:#222; border:1px solid #444;
-              border-radius:6px; padding:10px; color:#eee; grid-column:1/-1;">
-              <option value="">-- Select Artist --</option>
-            </select>
-            <input id="aStreamPlatform" placeholder="Platform (e.g. Spotify)" style="background:#222; border:1px solid #444; border-radius:6px; padding:10px; color:#eee;">
-            <input id="aStreamCount"    placeholder="Stream Count" type="number" style="background:#222; border:1px solid #444; border-radius:6px; padding:10px; color:#eee;">
-            <input id="aStreamDate"     placeholder="Date Recorded" type="date" style="background:#222; border:1px solid #444; border-radius:6px; padding:10px; color:#eee; grid-column:1/-1;">
+        <div style="background:#1a1a1a;border:1px solid #333;border-left:4px solid #1565C0;border-radius:8px;padding:24px;margin-bottom:24px;">
+          <h3 style="color:#42A5F5;margin-bottom:16px;">Add Stream Data</h3>
+          <div class="grid2">
+            <select id="aStreamArtist" class="inp full"><option value="">-- Select Artist --</option></select>
+            <input id="aStreamPlatform" class="inp" placeholder="Platform (e.g. Spotify)">
+            <input id="aStreamCount"    class="inp" placeholder="Stream Count" type="number">
+            <input id="aStreamDate"     class="inp full" placeholder="Date Recorded" type="date">
           </div>
-          <p id="adminStreamMsg" style="margin-top:12px; font-size:0.9rem;"></p>
-          <button class="approve-btn" style="margin-top:16px; width:100%;" onclick="adminAddStream()">Add Stream Data</button>
+          <p id="adminStreamMsg" style="margin-top:12px;font-size:0.9rem;"></p>
+          <button class="approve-btn" style="margin-top:16px;width:100%;" onclick="adminAddStream()">Add Stream Data</button>
         </div>
 
-        <!-- ADD ROYALTY -->
-        <div style="background:#1a1a1a; border:1px solid #333;
-          border-left:4px solid #2E7D32; border-radius:8px; padding:24px; margin-bottom:24px;">
-          <h3 style="color:#66BB6A; margin-bottom:16px;">Add Royalty Payment</h3>
-          <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
-            <select id="aRoyaltyArtist" style="background:#222; border:1px solid #444;
-              border-radius:6px; padding:10px; color:#eee; grid-column:1/-1;">
-              <option value="">-- Select Artist --</option>
-            </select>
-            <input id="aRoyaltyPlatform" placeholder="Platform"       style="background:#222; border:1px solid #444; border-radius:6px; padding:10px; color:#eee;">
-            <input id="aRoyaltyLabel"    placeholder="Label Name"     style="background:#222; border:1px solid #444; border-radius:6px; padding:10px; color:#eee;">
-            <input id="aRoyaltyAmount"   placeholder="Amount ($)" type="number" step="0.01" style="background:#222; border:1px solid #444; border-radius:6px; padding:10px; color:#eee;">
-            <input id="aRoyaltyDate"     placeholder="Payment Date" type="date" style="background:#222; border:1px solid #444; border-radius:6px; padding:10px; color:#eee;">
-            <select id="aRoyaltyStatus" style="background:#222; border:1px solid #444;
-              border-radius:6px; padding:10px; color:#eee; grid-column:1/-1;">
+        <div style="background:#1a1a1a;border:1px solid #333;border-left:4px solid #2E7D32;border-radius:8px;padding:24px;margin-bottom:24px;">
+          <h3 style="color:#66BB6A;margin-bottom:16px;">Add Royalty Payment</h3>
+          <div class="grid2">
+            <select id="aRoyaltyArtist" class="inp full"><option value="">-- Select Artist --</option></select>
+            <input id="aRoyaltyPlatform" class="inp" placeholder="Platform">
+            <input id="aRoyaltyLabel"    class="inp" placeholder="Label Name">
+            <input id="aRoyaltyAmount"   class="inp" placeholder="Amount ($)" type="number" step="0.01">
+            <input id="aRoyaltyDate"     class="inp" placeholder="Payment Date" type="date">
+            <select id="aRoyaltyStatus" class="inp full">
               <option value="Pending">Pending</option>
               <option value="Paid">Paid</option>
               <option value="Processing">Processing</option>
             </select>
           </div>
-          <p id="adminRoyaltyMsg" style="margin-top:12px; font-size:0.9rem;"></p>
-          <button class="approve-btn" style="margin-top:16px; width:100%;" onclick="adminAddRoyalty()">Add Royalty Payment</button>
+          <p id="adminRoyaltyMsg" style="margin-top:12px;font-size:0.9rem;"></p>
+          <button class="approve-btn" style="margin-top:16px;width:100%;" onclick="adminAddRoyalty()">Add Royalty Payment</button>
         </div>
 
-        <!-- ADD CONTRACT -->
-        <div style="background:#1a1a1a; border:1px solid #333;
-          border-left:4px solid #7B1FA2; border-radius:8px; padding:24px; margin-bottom:24px;">
-          <h3 style="color:#CE93D8; margin-bottom:16px;">Add Contract</h3>
-          <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
-            <select id="aContractArtist" style="background:#222; border:1px solid #444;
-              border-radius:6px; padding:10px; color:#eee; grid-column:1/-1;">
-              <option value="">-- Select Artist --</option>
-            </select>
-            <input id="aContractLabel"         placeholder="Label Name"    style="background:#222; border:1px solid #444; border-radius:6px; padding:10px; color:#eee;">
-            <input id="aContractDeal"          placeholder="Deal Type"     style="background:#222; border:1px solid #444; border-radius:6px; padding:10px; color:#eee;">
-            <input id="aContractArtistPct"     placeholder="Artist %"  type="number" style="background:#222; border:1px solid #444; border-radius:6px; padding:10px; color:#eee;">
-            <input id="aContractManagerPct"    placeholder="Manager %" type="number" style="background:#222; border:1px solid #444; border-radius:6px; padding:10px; color:#eee;">
-            <input id="aContractLabelPct"      placeholder="Label %"   type="number" style="background:#222; border:1px solid #444; border-radius:6px; padding:10px; color:#eee;">
-            <input id="aContractArtistLawyer"  placeholder="Artist Lawyer"  style="background:#222; border:1px solid #444; border-radius:6px; padding:10px; color:#eee;">
-            <input id="aContractManagerLawyer" placeholder="Manager Lawyer" style="background:#222; border:1px solid #444; border-radius:6px; padding:10px; color:#eee;">
-            <input id="aContractStart"         placeholder="Start Date" type="date" style="background:#222; border:1px solid #444; border-radius:6px; padding:10px; color:#eee;">
-            <input id="aContractEnd"           placeholder="End Date"   type="date" style="background:#222; border:1px solid #444; border-radius:6px; padding:10px; color:#eee;">
+        <div style="background:#1a1a1a;border:1px solid #333;border-left:4px solid #7B1FA2;border-radius:8px;padding:24px;margin-bottom:24px;">
+          <h3 style="color:#CE93D8;margin-bottom:16px;">Add Contract</h3>
+          <div class="grid2">
+            <select id="aContractArtist" class="inp full"><option value="">-- Select Artist --</option></select>
+            <input id="aContractLabel"         class="inp" placeholder="Label Name">
+            <input id="aContractDeal"          class="inp" placeholder="Deal Type">
+            <input id="aContractArtistPct"     class="inp" placeholder="Artist %" type="number">
+            <input id="aContractManagerPct"    class="inp" placeholder="Manager %" type="number">
+            <input id="aContractLabelPct"      class="inp" placeholder="Label %" type="number">
+            <input id="aContractArtistLawyer"  class="inp" placeholder="Artist Lawyer">
+            <input id="aContractManagerLawyer" class="inp" placeholder="Manager Lawyer">
+            <input id="aContractStart"         class="inp" placeholder="Start Date" type="date">
+            <input id="aContractEnd"           class="inp" placeholder="End Date" type="date">
           </div>
-          <p id="adminContractMsg" style="margin-top:12px; font-size:0.9rem;"></p>
-          <button class="approve-btn" style="margin-top:16px; width:100%;" onclick="adminAddContract()">Add Contract</button>
+          <p id="adminContractMsg" style="margin-top:12px;font-size:0.9rem;"></p>
+          <button class="approve-btn" style="margin-top:16px;width:100%;" onclick="adminAddContract()">Add Contract</button>
         </div>
 
-      </div>
-      <!-- closes musicDataSection -->
+      </div><!-- closes musicDataSection -->
 
-    </div>
-    <!-- closes adminDataSection -->
+    </div><!-- closes adminDataSection -->
 
-    <!-- All Users section -->
+    <!-- TAB: All Users -->
     <div id="allUsersSection" style="display:none">
       <div id="allUsersList"></div>
     </div>
 
-    <!-- Collabs section -->
+    <!-- TAB: Collabs -->
     <div id="collabsSection" style="display:none">
       <div id="adminCollabsList"></div>
     </div>
 
-  </div>
-  <!-- closes adminPanel -->
-  
+  </div><!-- closes adminPanel -->
 
   <script>
+    /*
+     * Copyright 2026 BOLAJI B ADEEKO LLC
+     * Unauthorized copying prohibited
+     */
     let adminKey = "";
+
+    const ROLE_COLORS = {
+      'Artist':'#B8860B','Manager':'#1565C0','Producer':'#6A1B9A',
+      'Engineer':'#2E7D32','Record Label':'#C62828','Painter':'#E65100',
+      'Photographer':'#00695C','Graphic Designer':'#BF360C','Filmmaker':'#283593',
+      'Videographer':'#37474F','Dancer':'#00838F','Actor':'#4E342E',
+      'Fashion Designer':'#880E4F','Stylist':'#4A148C','Other':'#424242'
+    };
+
+    const ROLE_FIELDS = {
+      'Artist':[
+        {id:'rfGenre',label:'Primary Genre',type:'text'},
+        {id:'rfAscap',label:'ASCAP / BMI / PRO ID',type:'text'},
+        {id:'rfLabel',label:'Record Label',type:'text'},
+        {id:'rfManager',label:'Manager Name',type:'text'},
+        {id:'rfSpotify',label:'Spotify URL',type:'text'},
+        {id:'rfApple',label:'Apple Music URL',type:'text'},
+        {id:'rfInstagram',label:'Instagram URL',type:'text'},
+        {id:'rfTikTok',label:'TikTok URL',type:'text'},
+        {id:'rfYouTube',label:'YouTube URL',type:'text'},
+        {id:'rfBio',label:'Bio',type:'textarea'}
+      ],
+      'Manager':[
+        {id:'rfLabel',label:'Company / Label Name',type:'text'},
+        {id:'rfRoster',label:'Roster Size',type:'number'},
+        {id:'rfWebsite',label:'Website URL',type:'text'},
+        {id:'rfInstagram',label:'Instagram URL',type:'text'},
+        {id:'rfBio',label:'Bio',type:'textarea'}
+      ],
+      'Producer':[
+        {id:'rfGenre',label:'Genre Specialty',type:'text'},
+        {id:'rfDaw',label:'DAW Software',type:'text'},
+        {id:'rfYearsExp',label:'Years of Experience',type:'number'},
+        {id:'rfSpotify',label:'Spotify URL',type:'text'},
+        {id:'rfInstagram',label:'Instagram URL',type:'text'},
+        {id:'rfYouTube',label:'YouTube URL',type:'text'},
+        {id:'rfWebsite',label:'Website URL',type:'text'},
+        {id:'rfBio',label:'Bio',type:'textarea'}
+      ],
+      'Engineer':[
+        {id:'rfEngType',label:'Specialty (Mixing/Mastering/Recording/Live)',type:'text'},
+        {id:'rfStudio',label:'Studio Name',type:'text'},
+        {id:'rfDaw',label:'DAW Software',type:'text'},
+        {id:'rfYearsExp',label:'Years of Experience',type:'number'},
+        {id:'rfInstagram',label:'Instagram URL',type:'text'},
+        {id:'rfYouTube',label:'YouTube URL',type:'text'},
+        {id:'rfWebsite',label:'Website URL',type:'text'},
+        {id:'rfBio',label:'Bio',type:'textarea'}
+      ],
+      'Record Label':[
+        {id:'rfLabel',label:'Label Name',type:'text'},
+        {id:'rfOwner',label:'Label Owner',type:'text'},
+        {id:'rfRoster',label:'Number of Artists',type:'number'},
+        {id:'rfWebsite',label:'Website URL',type:'text'},
+        {id:'rfInstagram',label:'Instagram URL',type:'text'},
+        {id:'rfSpotify',label:'Spotify URL',type:'text'},
+        {id:'rfBio',label:'About the Label',type:'textarea'}
+      ],
+      'Painter':[
+        {id:'rfSubField',label:'Art Style (e.g. Abstract, Realism, Digital)',type:'text'},
+        {id:'rfPortfolio',label:'Portfolio URL',type:'text'},
+        {id:'rfInstagram',label:'Instagram URL',type:'text'},
+        {id:'rfWebsite',label:'Website URL',type:'text'},
+        {id:'rfBio',label:'Artist Statement / Bio',type:'textarea'}
+      ],
+      'Photographer':[
+        {id:'rfSubField',label:'Specialty (Portrait, Concert, Commercial)',type:'text'},
+        {id:'rfPortfolio',label:'Portfolio URL',type:'text'},
+        {id:'rfInstagram',label:'Instagram URL',type:'text'},
+        {id:'rfWebsite',label:'Website URL',type:'text'},
+        {id:'rfBio',label:'Bio',type:'textarea'}
+      ],
+      'Graphic Designer':[
+        {id:'rfSubField',label:'Specialty (Branding, Motion, Print)',type:'text'},
+        {id:'rfPortfolio',label:'Portfolio URL',type:'text'},
+        {id:'rfInstagram',label:'Instagram URL',type:'text'},
+        {id:'rfWebsite',label:'Website URL',type:'text'},
+        {id:'rfBio',label:'Bio',type:'textarea'}
+      ],
+      'Filmmaker':[
+        {id:'rfSubField',label:'Specialty (Music Videos, Short Films, Docs)',type:'text'},
+        {id:'rfPortfolio',label:'Portfolio / Reel URL',type:'text'},
+        {id:'rfYouTube',label:'YouTube URL',type:'text'},
+        {id:'rfInstagram',label:'Instagram URL',type:'text'},
+        {id:'rfWebsite',label:'Website URL',type:'text'},
+        {id:'rfBio',label:'Bio',type:'textarea'}
+      ],
+      'Videographer':[
+        {id:'rfSubField',label:'Specialty (Events, Commercial, Content)',type:'text'},
+        {id:'rfPortfolio',label:'Portfolio URL',type:'text'},
+        {id:'rfYouTube',label:'YouTube URL',type:'text'},
+        {id:'rfInstagram',label:'Instagram URL',type:'text'},
+        {id:'rfBio',label:'Bio',type:'textarea'}
+      ],
+      'Dancer':[
+        {id:'rfSubField',label:'Dance Style (Hip Hop, Contemporary, Ballet)',type:'text'},
+        {id:'rfYouTube',label:'YouTube URL',type:'text'},
+        {id:'rfInstagram',label:'Instagram URL',type:'text'},
+        {id:'rfTikTok',label:'TikTok URL',type:'text'},
+        {id:'rfWebsite',label:'Website URL',type:'text'},
+        {id:'rfBio',label:'Bio',type:'textarea'}
+      ],
+      'Actor':[
+        {id:'rfSubField',label:'Type (Film, TV, Stage, Voice)',type:'text'},
+        {id:'rfPortfolio',label:'Reel / Demo URL',type:'text'},
+        {id:'rfInstagram',label:'Instagram URL',type:'text'},
+        {id:'rfWebsite',label:'Website / IMDb URL',type:'text'},
+        {id:'rfBio',label:'Bio',type:'textarea'}
+      ],
+      'Fashion Designer':[
+        {id:'rfSubField',label:'Specialty (Streetwear, Luxury, Accessories)',type:'text'},
+        {id:'rfPortfolio',label:'Portfolio URL',type:'text'},
+        {id:'rfInstagram',label:'Instagram URL',type:'text'},
+        {id:'rfWebsite',label:'Website URL',type:'text'},
+        {id:'rfBio',label:'Brand Story / Bio',type:'textarea'}
+      ],
+      'Stylist':[
+        {id:'rfSubField',label:'Specialty (Editorial, Celebrity, Personal)',type:'text'},
+        {id:'rfPortfolio',label:'Portfolio URL',type:'text'},
+        {id:'rfInstagram',label:'Instagram URL',type:'text'},
+        {id:'rfWebsite',label:'Website URL',type:'text'},
+        {id:'rfBio',label:'Bio',type:'textarea'}
+      ],
+      'Other':[
+        {id:'rfSubField',label:'Describe Your Creative Field',type:'text'},
+        {id:'rfPortfolio',label:'Portfolio / Work URL',type:'text'},
+        {id:'rfInstagram',label:'Instagram URL',type:'text'},
+        {id:'rfWebsite',label:'Website URL',type:'text'},
+        {id:'rfBio',label:'Bio',type:'textarea'}
+      ]
+    };
+
+    const MUSIC_ROLES = ['Artist','Producer','Engineer','Manager','Record Label'];
 
     function adminLogin() {
       const key = document.getElementById("adminKeyInput").value.trim();
@@ -234,18 +346,12 @@
     async function loadPending() {
       try {
         const res = await fetch("/api/admin/pending", { headers: { "x-admin-key": adminKey } });
-        if (res.status === 403) {
-          document.getElementById("adminLoginMsg").textContent = "Incorrect admin key.";
-          return;
-        }
+        if (res.status === 403) { document.getElementById("adminLoginMsg").textContent = "Incorrect admin key."; return; }
         const data = await res.json();
         document.getElementById("adminLoginSection").style.display = "none";
         document.getElementById("adminPanel").style.display = "block";
         const list = document.getElementById("pendingList");
-        if (!data.length) {
-          list.innerHTML = "<p class=empty-msg>No pending registrations right now.</p>";
-          return;
-        }
+        if (!data.length) { list.innerHTML = "<p class=empty-msg>No pending registrations right now.</p>"; return; }
         list.innerHTML = data.map(a =>
           "<div class=pending-card id=card-" + a.Staging_ID + ">" +
           "<div class=artist-info>" +
@@ -266,21 +372,14 @@
     async function approve(id) {
       if (!confirm("Approve this artist?")) return;
       const btn = document.querySelector("#card-" + id + " .approve-btn");
-      btn.disabled = true;
-      btn.textContent = "Processing...";
-      const res = await fetch("/api/admin/approve/" + id, {
-        method: "POST", headers: { "x-admin-key": adminKey }
-      });
+      btn.disabled = true; btn.textContent = "Processing...";
+      const res = await fetch("/api/admin/approve/" + id, { method: "POST", headers: { "x-admin-key": adminKey } });
       const data = await res.json();
       if (res.ok) {
         const card = document.getElementById("card-" + id);
         card.style.borderLeftColor = "#2E7D32";
         card.querySelector(".action-btns").innerHTML = "<span class='badge badge-approved'>Approved</span>";
-      } else {
-        btn.disabled = false;
-        btn.textContent = "Approve";
-        alert(data.message);
-      }
+      } else { btn.disabled = false; btn.textContent = "Approve"; alert(data.message); }
     }
 
     async function reject(id) {
@@ -302,6 +401,7 @@
       const res = await fetch("/api/admin/artists", { headers: { "x-admin-key": adminKey } });
       const data = await res.json();
       const select = document.getElementById(selectId);
+      if (!select) return;
       select.innerHTML = "<option value=''>-- Select Artist --</option>" +
         data.map(a => "<option value='" + a.Artist_ID + "'>" + a.Artist_Name + "</option>").join("");
     }
@@ -309,26 +409,18 @@
     async function adminAddSong() {
       const msg = document.getElementById("adminSongMsg");
       const payload = {
-        artistId:       document.getElementById("aSongArtist").value,
-        songName:       document.getElementById("aSongName").value.trim(),
-        album:          document.getElementById("aSongAlbum").value.trim(),
-        releaseDate:    document.getElementById("aSongDate").value,
-        duration:       document.getElementById("aSongDuration").value.trim(),
-        isrc:           document.getElementById("aSongISRC").value.trim(),
+        artistId: document.getElementById("aSongArtist").value,
+        songName: document.getElementById("aSongName").value.trim(),
+        album: document.getElementById("aSongAlbum").value.trim(),
+        releaseDate: document.getElementById("aSongDate").value,
+        duration: document.getElementById("aSongDuration").value.trim(),
+        isrc: document.getElementById("aSongISRC").value.trim(),
         featuredArtist: document.getElementById("aSongFeatured").value.trim(),
-        writersCredit:  document.getElementById("aSongWriters").value.trim(),
-        producerName:   document.getElementById("aSongProducer").value.trim()
+        writersCredit: document.getElementById("aSongWriters").value.trim(),
+        producerName: document.getElementById("aSongProducer").value.trim()
       };
-      if (!payload.artistId || !payload.songName) {
-        msg.style.color = "#f44336";
-        msg.textContent = "Artist and song name are required.";
-        return;
-      }
-      const res = await fetch("/api/admin/songs", {
-        method: "POST",
-        headers: { "x-admin-key": adminKey, "Content-Type": "application/json" },
-        body: JSON.stringify(payload)
-      });
+      if (!payload.artistId || !payload.songName) { msg.style.color="#f44336"; msg.textContent="Artist and song name are required."; return; }
+      const res = await fetch("/api/admin/songs", { method:"POST", headers:{"x-admin-key":adminKey,"Content-Type":"application/json"}, body:JSON.stringify(payload) });
       const data = await res.json();
       msg.style.color = res.ok ? "#4CAF50" : "#f44336";
       msg.textContent = data.message;
@@ -337,21 +429,13 @@
     async function adminAddStream() {
       const msg = document.getElementById("adminStreamMsg");
       const payload = {
-        artistId:    document.getElementById("aStreamArtist").value,
-        platform:    document.getElementById("aStreamPlatform").value.trim(),
+        artistId: document.getElementById("aStreamArtist").value,
+        platform: document.getElementById("aStreamPlatform").value.trim(),
         streamCount: parseInt(document.getElementById("aStreamCount").value),
         dateRecorded: document.getElementById("aStreamDate").value
       };
-      if (!payload.artistId || !payload.platform || !payload.streamCount) {
-        msg.style.color = "#f44336";
-        msg.textContent = "Artist, platform and stream count are required.";
-        return;
-      }
-      const res = await fetch("/api/admin/streams", {
-        method: "POST",
-        headers: { "x-admin-key": adminKey, "Content-Type": "application/json" },
-        body: JSON.stringify(payload)
-      });
+      if (!payload.artistId || !payload.platform || !payload.streamCount) { msg.style.color="#f44336"; msg.textContent="Artist, platform and stream count are required."; return; }
+      const res = await fetch("/api/admin/streams", { method:"POST", headers:{"x-admin-key":adminKey,"Content-Type":"application/json"}, body:JSON.stringify(payload) });
       const data = await res.json();
       msg.style.color = res.ok ? "#4CAF50" : "#f44336";
       msg.textContent = data.message;
@@ -360,23 +444,15 @@
     async function adminAddRoyalty() {
       const msg = document.getElementById("adminRoyaltyMsg");
       const payload = {
-        artistId:    document.getElementById("aRoyaltyArtist").value,
-        platform:    document.getElementById("aRoyaltyPlatform").value.trim(),
-        labelName:   document.getElementById("aRoyaltyLabel").value.trim(),
-        amount:      parseFloat(document.getElementById("aRoyaltyAmount").value),
+        artistId: document.getElementById("aRoyaltyArtist").value,
+        platform: document.getElementById("aRoyaltyPlatform").value.trim(),
+        labelName: document.getElementById("aRoyaltyLabel").value.trim(),
+        amount: parseFloat(document.getElementById("aRoyaltyAmount").value),
         paymentDate: document.getElementById("aRoyaltyDate").value,
-        status:      document.getElementById("aRoyaltyStatus").value
+        status: document.getElementById("aRoyaltyStatus").value
       };
-      if (!payload.artistId || !payload.amount) {
-        msg.style.color = "#f44336";
-        msg.textContent = "Artist and amount are required.";
-        return;
-      }
-      const res = await fetch("/api/admin/royalties", {
-        method: "POST",
-        headers: { "x-admin-key": adminKey, "Content-Type": "application/json" },
-        body: JSON.stringify(payload)
-      });
+      if (!payload.artistId || !payload.amount) { msg.style.color="#f44336"; msg.textContent="Artist and amount are required."; return; }
+      const res = await fetch("/api/admin/royalties", { method:"POST", headers:{"x-admin-key":adminKey,"Content-Type":"application/json"}, body:JSON.stringify(payload) });
       const data = await res.json();
       msg.style.color = res.ok ? "#4CAF50" : "#f44336";
       msg.textContent = data.message;
@@ -385,50 +461,190 @@
     async function adminAddContract() {
       const msg = document.getElementById("adminContractMsg");
       const payload = {
-        artistId:      document.getElementById("aContractArtist").value,
-        labelName:     document.getElementById("aContractLabel").value.trim(),
-        dealType:      document.getElementById("aContractDeal").value.trim(),
-        artistPct:     parseFloat(document.getElementById("aContractArtistPct").value || 0),
-        managerPct:    parseFloat(document.getElementById("aContractManagerPct").value || 0),
-        labelPct:      parseFloat(document.getElementById("aContractLabelPct").value || 0),
-        artistLawyer:  document.getElementById("aContractArtistLawyer").value.trim(),
+        artistId: document.getElementById("aContractArtist").value,
+        labelName: document.getElementById("aContractLabel").value.trim(),
+        dealType: document.getElementById("aContractDeal").value.trim(),
+        artistPct: parseFloat(document.getElementById("aContractArtistPct").value||0),
+        managerPct: parseFloat(document.getElementById("aContractManagerPct").value||0),
+        labelPct: parseFloat(document.getElementById("aContractLabelPct").value||0),
+        artistLawyer: document.getElementById("aContractArtistLawyer").value.trim(),
         managerLawyer: document.getElementById("aContractManagerLawyer").value.trim(),
-        startDate:     document.getElementById("aContractStart").value,
-        endDate:       document.getElementById("aContractEnd").value
+        startDate: document.getElementById("aContractStart").value,
+        endDate: document.getElementById("aContractEnd").value
       };
-      if (!payload.artistId || !payload.labelName) {
-        msg.style.color = "#f44336";
-        msg.textContent = "Artist and label name are required.";
-        return;
-      }
-      const res = await fetch("/api/admin/contracts", {
-        method: "POST",
-        headers: { "x-admin-key": adminKey, "Content-Type": "application/json" },
-        body: JSON.stringify(payload)
-      });
+      if (!payload.artistId || !payload.labelName) { msg.style.color="#f44336"; msg.textContent="Artist and label name are required."; return; }
+      const res = await fetch("/api/admin/contracts", { method:"POST", headers:{"x-admin-key":adminKey,"Content-Type":"application/json"}, body:JSON.stringify(payload) });
       const data = await res.json();
       msg.style.color = res.ok ? "#4CAF50" : "#f44336";
       msg.textContent = data.message;
     }
 
+    function switchAdminRole() {
+      const role      = document.getElementById("adminRoleSelect").value;
+      const color     = ROLE_COLORS[role] || "#B8860B";
+      const fields    = ROLE_FIELDS[role] || ROLE_FIELDS["Other"];
+      const container = document.getElementById("roleFormContainer");
+      const musicSec  = document.getElementById("musicDataSection");
+      if (!role) { container.innerHTML = ""; musicSec.style.display = "none"; return; }
+      const inp = "background:#222;border:1px solid #444;border-radius:6px;padding:10px;color:#eee;font-size:0.9rem;width:100%;box-sizing:border-box;";
+      const ta  = inp + "min-height:80px;resize:vertical;";
+      container.innerHTML =
+        "<div style='background:#1a1a1a;border:1px solid #333;border-left:6px solid " + color + ";border-radius:8px;padding:24px;margin-bottom:24px;'>" +
+        "<h3 style='color:" + color + ";margin-bottom:8px;'>" + role + " Profile Data</h3>" +
+        "<p style='color:#666;font-size:0.85rem;margin-bottom:16px;'>Select a user then fill in their details</p>" +
+        "<div class='grid2'>" +
+        "<select id='rfUserSelect' class='inp full' onchange='loadUserDataForEdit()'>" +
+        "<option value=''>-- Select " + role + " --</option>" +
+        "</select>" +
+        fields.map(f => {
+          const full = f.type === "textarea" ? " full" : "";
+          return f.type === "textarea"
+            ? "<textarea id='" + f.id + "' placeholder='" + f.label + "' style='" + ta + "' class='full'></textarea>"
+            : "<input id='" + f.id + "' placeholder='" + f.label + "' type='" + f.type + "' style='" + inp + "' class='" + full + "'>";
+        }).join("") +
+        "</div>" +
+        "<p id='roleFormMsg' style='margin-top:12px;font-size:0.9rem;'></p>" +
+        "<button style='margin-top:16px;width:100%;padding:12px;background:" + color + ";color:#fff;font-weight:bold;border:none;border-radius:6px;cursor:pointer;font-size:1rem;' onclick='saveRoleData()'>Save " + role + " Data</button>" +
+        "</div>";
+      loadRoleUsers(role);
+      musicSec.style.display = MUSIC_ROLES.includes(role) ? "block" : "none";
+      if (MUSIC_ROLES.includes(role)) {
+        loadArtistDropdown("aSongArtist");
+        loadArtistDropdown("aStreamArtist");
+        loadArtistDropdown("aRoyaltyArtist");
+        loadArtistDropdown("aContractArtist");
+      }
+    }
+
+    async function loadRoleUsers(role) {
+      const res    = await fetch("/api/admin/all-users", { headers: { "x-admin-key": adminKey } });
+      const data   = await res.json();
+      const select = document.getElementById("rfUserSelect");
+      if (!select) return;
+      const filtered = data.filter(u => (u.Role || "Artist") === role);
+      select.innerHTML = "<option value=''>-- Select " + role + " --</option>" +
+        filtered.map(u => "<option value='" + u.Login_ID + "' data-artistid='" + (u.Artist_ID || "") + "'>" +
+          u.Artist_Name + " (" + (u.TAP_ID || "No TAP ID") + ")</option>").join("");
+    }
+
+    async function loadUserDataForEdit() {
+      const select   = document.getElementById("rfUserSelect");
+      const artistId = select.options[select.selectedIndex]?.dataset.artistid;
+      if (!artistId) return;
+      try {
+        const res  = await fetch("/api/admin/user-profile/" + artistId, { headers: { "x-admin-key": adminKey } });
+        const data = await res.json();
+        const fill = (id, val) => { const el = document.getElementById(id); if (el && val) el.value = val; };
+        fill("rfGenre",     data.Genre_Specialty);
+        fill("rfAscap",     data.ASCAP_ID);
+        fill("rfLabel",     data.Label_Name || data.Signed_2_Label);
+        fill("rfManager",   data.Manager_Name);
+        fill("rfOwner",     data.Label_Owner);
+        fill("rfRoster",    data.Roster_Size);
+        fill("rfDaw",       data.DAW_Software);
+        fill("rfEngType",   data.Engineer_Type);
+        fill("rfStudio",    data.Studio_Name);
+        fill("rfSubField",  data.Creative_SubField || data.Creative_Field);
+        fill("rfYearsExp",  data.Years_Experience);
+        fill("rfBio",       data.Bio);
+        fill("rfWebsite",   data.Website_URL);
+        fill("rfPortfolio", data.Portfolio_URL);
+        fill("rfSpotify",   data.Artist_Spotify_URL);
+        fill("rfApple",     data.Artist_Apple_URL);
+        fill("rfInstagram", data.Artist_Instagram_URL);
+        fill("rfTikTok",    data.Artist_TikTok_URL);
+        fill("rfYouTube",   data.Artist_Youtube_URL);
+      } catch { }
+    }
+
+    async function saveRoleData() {
+      const select   = document.getElementById("rfUserSelect");
+      const artistId = select.options[select.selectedIndex]?.dataset.artistid;
+      const msg      = document.getElementById("roleFormMsg");
+      const role     = document.getElementById("adminRoleSelect").value;
+      const color    = ROLE_COLORS[role] || "#B8860B";
+      if (!artistId) { msg.style.color="#f44336"; msg.textContent="Please select a user first."; return; }
+      const val = id => { const el = document.getElementById(id); return el ? el.value.trim() : null; };
+      const payload = {
+        artistId, role,
+        genre: val("rfGenre"), ascapId: val("rfAscap"), labelName: val("rfLabel"),
+        labelOwner: val("rfOwner"), rosterSize: val("rfRoster"), managerName: val("rfManager"),
+        dawSoftware: val("rfDaw"), engineerType: val("rfEngType"), studioName: val("rfStudio"),
+        subField: val("rfSubField"), yearsExp: val("rfYearsExp"), bio: val("rfBio"),
+        websiteUrl: val("rfWebsite"), portfolioUrl: val("rfPortfolio"),
+        spotify: val("rfSpotify"), apple: val("rfApple"), instagram: val("rfInstagram"),
+        tiktok: val("rfTikTok"), youtube: val("rfYouTube")
+      };
+      const res  = await fetch("/api/admin/update-role-data", { method:"POST", headers:{"x-admin-key":adminKey,"Content-Type":"application/json"}, body:JSON.stringify(payload) });
+      const data = await res.json();
+      msg.style.color = res.ok ? color : "#f44336";
+      msg.textContent = data.message;
+    }
+
     async function loadAllUsers() {
-      const res = await fetch("/api/admin/all-users", { headers: { "x-admin-key": adminKey } });
+      const res  = await fetch("/api/admin/all-users", { headers: { "x-admin-key": adminKey } });
       const data = await res.json();
       const list = document.getElementById("allUsersList");
       if (!data.length) { list.innerHTML = "<p class=empty-msg>No users yet.</p>"; return; }
       const roles = [...new Set(data.map(u => u.Role || "Artist"))];
-      list.innerHTML = roles.map(role =>
-        "<div style='margin-bottom:24px'>" +
-        "<h3 style='color:#D4AF37; border-bottom:1px solid #333; padding-bottom:8px; margin-bottom:12px;'>" + role + "s</h3>" +
-        data.filter(u => (u.Role || "Artist") === role).map(u =>
-          "<div class=pending-card>" +
-          "<div class=artist-info>" +
-          "<h3>" + u.Artist_Name + " <span class='badge' style='background:#333; color:#D4AF37'>" + (u.TAP_ID || "No TAP ID") + "</span></h3>" +
-          "<p>" + u.Artist_Email + "</p>" +
-          "<p style='color:#555; font-size:0.8rem'>Joined: " + new Date(u.Created_Date).toLocaleDateString() + "</p>" +
-          "</div></div>"
-        ).join("") +
-        "</div>"
+      list.innerHTML = roles.map(role => {
+        const color = ROLE_COLORS[role] || "#B8860B";
+        const users = data.filter(u => (u.Role || "Artist") === role);
+        return "<div style='margin-bottom:32px;'>" +
+          "<div style='background:" + color + "22;border-left:4px solid " + color + ";border-radius:8px 8px 0 0;padding:12px 20px;'>" +
+          "<h3 style='color:" + color + ";margin:0;'>" + role + "s (" + users.length + ")</h3></div>" +
+          users.map(u => renderUserCard(u, color)).join("") + "</div>";
+      }).join("");
+    }
+
+    function renderUserCard(u, color) {
+      const socials = [
+        {url:u.Artist_Spotify_URL,label:"Spotify",c:"#1DB954"},
+        {url:u.Artist_Instagram_URL,label:"Instagram",c:"#E1306C"},
+        {url:u.Artist_TikTok_URL,label:"TikTok",c:"#69C9D0"},
+        {url:u.Artist_Youtube_URL,label:"YouTube",c:"#FF0000"},
+        {url:u.Artist_Apple_URL,label:"Apple Music",c:"#FC3C44"}
+      ].filter(s => s.url && s.url.trim() !== "");
+      const attrs = [
+        u.Artist_City ? u.Artist_City + (u.Artist_State ? ", " + u.Artist_State : "") : null,
+        u.Genre_Specialty ? "Genre: " + u.Genre_Specialty : null,
+        u.Creative_Field  ? "Field: " + u.Creative_Field  : null,
+        u.Studio_Name     ? "Studio: " + u.Studio_Name    : null,
+        u.Label_Name      ? "Label: " + u.Label_Name      : null,
+        u.DAW_Software    ? "DAW: " + u.DAW_Software       : null,
+        u.Years_Experience ? u.Years_Experience + " yrs exp" : null
+      ].filter(Boolean);
+      return "<div style='background:#1a1a1a;border:1px solid #222;border-left:4px solid " + color + ";border-radius:0 0 8px 8px;padding:16px 20px;margin-bottom:2px;display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:12px;'>" +
+        "<div style='flex:1;'>" +
+        "<div style='display:flex;align-items:center;gap:10px;margin-bottom:6px;'>" +
+        "<div style='width:36px;height:36px;border-radius:50%;background:" + color + "44;border:2px solid " + color + ";display:flex;align-items:center;justify-content:center;color:" + color + ";font-weight:bold;font-size:0.85rem;'>" +
+        (u.Artist_Name||"U").charAt(0).toUpperCase() + "</div>" +
+        "<div><div style='color:#eee;font-weight:600;'>" + (u.Artist_Name||"Unknown") + "</div>" +
+        "<div style='color:#666;font-size:0.78rem;font-family:monospace;'>" + (u.TAP_ID||"No TAP ID") + "</div></div></div>" +
+        "<div style='color:#888;font-size:0.82rem;'>" + (u.Artist_Email||"") + "</div>" +
+        (attrs.length ? "<div style='margin-top:6px;display:flex;flex-wrap:wrap;gap:6px;'>" +
+        attrs.map(a => "<span style='background:#222;border:1px solid #333;border-radius:4px;padding:2px 8px;color:#aaa;font-size:0.75rem;'>" + a + "</span>").join("") + "</div>" : "") +
+        (socials.length ? "<div style='margin-top:8px;display:flex;gap:6px;flex-wrap:wrap;'>" +
+        socials.map(s => "<a href='" + s.url + "' target='_blank' style='padding:3px 10px;border-radius:12px;font-size:0.72rem;font-weight:bold;background:" + s.c + "22;border:1px solid " + s.c + ";color:" + s.c + ";text-decoration:none;'>" + s.label + "</a>").join("") + "</div>" : "") +
+        "</div>" +
+        "<div style='color:#555;font-size:0.75rem;text-align:right;'>Joined: " + new Date(u.Created_Date).toLocaleDateString() + "</div>" +
+        "</div>";
+    }
+
+    async function loadAdminCollabs() {
+      const res  = await fetch("/api/admin/collab-requests", { headers: { "x-admin-key": adminKey } });
+      const data = await res.json();
+      const list = document.getElementById("adminCollabsList");
+      if (!data.length) { list.innerHTML = "<p class=empty-msg>No collab requests yet.</p>"; return; }
+      list.innerHTML = data.map(r =>
+        "<div class=pending-card>" +
+        "<div class=artist-info>" +
+        "<h3>" + r.Sender_Name + " &#8594; " + r.Receiver_Name +
+        " <span class=badge style='background:#333;color:#D4AF37'>" + r.Status + "</span></h3>" +
+        "<p>" + (r.Sender_Role||"") + " to " + (r.Receiver_Role||"") + "</p>" +
+        "<p style='color:#aaa;font-size:0.85rem;margin-top:4px;'>" + (r.Message||"") + "</p>" +
+        "<p style='color:#555;font-size:0.75rem;'>" + new Date(r.Sent_At).toLocaleDateString() + "</p>" +
+        "</div></div>"
       ).join("");
     }
 
@@ -436,464 +652,29 @@
       document.getElementById("pendingList").style.display      = "none";
       document.getElementById("adminDataSection").style.display = "none";
       document.getElementById("allUsersSection").style.display  = "none";
-
+      document.getElementById("collabsSection").style.display   = "none";
       if (tab === "pending") {
-        document.getElementById("pendingList").style.display    = "block";
-        document.getElementById("adminPanelTitle").textContent  = "Pending Registrations";
+        document.getElementById("pendingList").style.display   = "block";
+        document.getElementById("adminPanelTitle").textContent = "Pending Registrations";
         loadPending();
       } else if (tab === "data") {
         document.getElementById("adminDataSection").style.display = "block";
         document.getElementById("adminPanelTitle").textContent    = "Data Entry";
-        loadArtistDropdown("aSongArtist");
-        loadArtistDropdown("aStreamArtist");
-        loadArtistDropdown("aRoyaltyArtist");
-        loadArtistDropdown("aContractArtist");
       } else if (tab === "users") {
         document.getElementById("allUsersSection").style.display = "block";
         document.getElementById("adminPanelTitle").textContent   = "All Users";
         loadAllUsers();
+      } else if (tab === "collabs") {
+        document.getElementById("collabsSection").style.display = "block";
+        document.getElementById("adminPanelTitle").textContent  = "Collab Requests";
+        loadAdminCollabs();
       }
     }
-
-async function loadAdminCollabs() {
-  const res  = await fetch('/api/admin/collab-requests', {
-    headers: { 'x-admin-key': adminKey }
-  });
-  const data = await res.json();
-  const list = document.getElementById('adminCollabsList');
-  if (!data.length) {
-    list.innerHTML = '<p class=empty-msg>No collab requests yet.</p>'; return;
-  }
-  list.innerHTML = data.map(r =>
-    '<div class=pending-card>' +
-    '<div class=artist-info>' +
-    '<h3>' + r.Sender_Name + ' &#8594; ' + r.Receiver_Name +
-    ' <span class=badge style="background:#333;color:#D4AF37">' + r.Status + '</span></h3>' +
-    '<p>' + (r.Sender_Role || '') + ' to ' + (r.Receiver_Role || '') + '</p>' +
-    '<p style="color:#aaa; font-size:0.85rem; margin-top:4px;">' + (r.Message || '') + '</p>' +
-    '<p style="color:#555; font-size:0.75rem;">' + new Date(r.Sent_At).toLocaleDateString() + '</p>' +
-    '</div></div>'
-  ).join('');
-}
-
-
-// Add this case to your switchAdminTab function:
-// if (tab === 'collabs') {
-//   document.getElementById('pendingList').style.display      = 'none';
-//   document.getElementById('adminDataSection').style.display = 'none';
-//   document.getElementById('allUsersSection').style.display  = 'none';
-//   document.getElementById('collabsSection').style.display   = 'block';
-//   document.getElementById('adminPanelTitle').textContent    = 'Collab Requests';
-//   loadAdminCollabs();
-// }
-
-
-
-// Role color map
-const ROLE_COLORS = {
-  'Artist':          '#B8860B',
-  'Manager':         '#1565C0',
-  'Producer':        '#6A1B9A',
-  'Engineer':        '#2E7D32',
-  'Record Label':    '#C62828',
-  'Painter':         '#E65100',
-  'Photographer':    '#00695C',
-  'Graphic Designer':'#BF360C',
-  'Filmmaker':       '#283593',
-  'Videographer':    '#37474F',
-  'Dancer':          '#00838F',
-  'Actor':           '#4E342E',
-  'Fashion Designer':'#880E4F',
-  'Stylist':         '#4A148C',
-  'Other':           '#424242'
-};
-
-
-// Role-specific form fields
-const ROLE_FIELDS = {
-  'Artist': [
-    { id:'rfGenre',    label:'Primary Genre',        type:'text' },
-    { id:'rfAscap',    label:'ASCAP / BMI / PRO ID', type:'text' },
-    { id:'rfLabel',    label:'Record Label',          type:'text' },
-    { id:'rfManager',  label:'Manager Name',          type:'text' },
-    { id:'rfSpotify',  label:'Spotify URL',           type:'text' },
-    { id:'rfApple',    label:'Apple Music URL',       type:'text' },
-    { id:'rfInstagram',label:'Instagram URL',         type:'text' },
-    { id:'rfTikTok',   label:'TikTok URL',            type:'text' },
-    { id:'rfYouTube',  label:'YouTube URL',           type:'text' },
-    { id:'rfBio',      label:'Bio',                   type:'textarea' }
-  ],
-  'Manager': [
-    { id:'rfLabel',    label:'Company / Label Name',  type:'text' },
-    { id:'rfRoster',   label:'Roster Size',           type:'number' },
-    { id:'rfWebsite',  label:'Website URL',           type:'text' },
-    { id:'rfInstagram',label:'Instagram URL',         type:'text' },
-    { id:'rfBio',      label:'Bio',                   type:'textarea' }
-  ],
-  'Producer': [
-    { id:'rfGenre',    label:'Genre Specialty',       type:'text' },
-    { id:'rfDaw',      label:'DAW Software',          type:'text' },
-    { id:'rfYearsExp', label:'Years of Experience',   type:'number' },
-    { id:'rfSpotify',  label:'Spotify URL',           type:'text' },
-    { id:'rfInstagram',label:'Instagram URL',         type:'text' },
-    { id:'rfYouTube',  label:'YouTube URL',           type:'text' },
-    { id:'rfWebsite',  label:'Website URL',           type:'text' },
-    { id:'rfBio',      label:'Bio',                   type:'textarea' }
-  ],
-  'Engineer': [
-    { id:'rfEngType',  label:'Specialty (Mixing/Mastering/Recording/Live)', type:'text' },
-    { id:'rfStudio',   label:'Studio Name',           type:'text' },
-    { id:'rfDaw',      label:'DAW Software',          type:'text' },
-    { id:'rfYearsExp', label:'Years of Experience',   type:'number' },
-    { id:'rfInstagram',label:'Instagram URL',         type:'text' },
-    { id:'rfYouTube',  label:'YouTube URL',           type:'text' },
-    { id:'rfWebsite',  label:'Website URL',           type:'text' },
-    { id:'rfBio',      label:'Bio',                   type:'textarea' }
-  ],
-  'Record Label': [
-    { id:'rfLabel',    label:'Label Name',            type:'text' },
-    { id:'rfOwner',    label:'Label Owner',           type:'text' },
-    { id:'rfRoster',   label:'Number of Artists',     type:'number' },
-    { id:'rfWebsite',  label:'Website URL',           type:'text' },
-    { id:'rfInstagram',label:'Instagram URL',         type:'text' },
-    { id:'rfSpotify',  label:'Spotify URL',           type:'text' },
-    { id:'rfBio',      label:'About the Label',       type:'textarea' }
-  ],
-  'Painter': [
-    { id:'rfSubField', label:'Art Style (e.g. Abstract, Realism, Digital)', type:'text' },
-    { id:'rfPortfolio',label:'Portfolio URL',         type:'text' },
-    { id:'rfInstagram',label:'Instagram URL',         type:'text' },
-    { id:'rfWebsite',  label:'Website URL',           type:'text' },
-    { id:'rfBio',      label:'Artist Statement / Bio',type:'textarea' }
-  ],
-  'Photographer': [
-    { id:'rfSubField', label:'Specialty (Portrait, Concert, Commercial)', type:'text' },
-    { id:'rfPortfolio',label:'Portfolio URL',         type:'text' },
-    { id:'rfInstagram',label:'Instagram URL',         type:'text' },
-    { id:'rfWebsite',  label:'Website URL',           type:'text' },
-    { id:'rfBio',      label:'Bio',                   type:'textarea' }
-  ],
-  'Graphic Designer': [
-    { id:'rfSubField', label:'Specialty (Branding, Motion, Print)',        type:'text' },
-    { id:'rfPortfolio',label:'Portfolio URL',         type:'text' },
-    { id:'rfInstagram',label:'Instagram URL',         type:'text' },
-    { id:'rfWebsite',  label:'Website URL',           type:'text' },
-    { id:'rfBio',      label:'Bio',                   type:'textarea' }
-  ],
-  'Filmmaker': [
-    { id:'rfSubField', label:'Specialty (Music Videos, Short Films, Docs)', type:'text' },
-    { id:'rfPortfolio',label:'Portfolio / Reel URL',  type:'text' },
-    { id:'rfYouTube',  label:'YouTube URL',           type:'text' },
-    { id:'rfInstagram',label:'Instagram URL',         type:'text' },
-    { id:'rfWebsite',  label:'Website URL',           type:'text' },
-    { id:'rfBio',      label:'Bio',                   type:'textarea' }
-  ],
-  'Videographer': [
-    { id:'rfSubField', label:'Specialty (Events, Commercial, Content)',    type:'text' },
-    { id:'rfPortfolio',label:'Portfolio URL',         type:'text' },
-    { id:'rfYouTube',  label:'YouTube URL',           type:'text' },
-    { id:'rfInstagram',label:'Instagram URL',         type:'text' },
-    { id:'rfBio',      label:'Bio',                   type:'textarea' }
-  ],
-  'Dancer': [
-    { id:'rfSubField', label:'Dance Style (Hip Hop, Contemporary, Ballet)', type:'text' },
-    { id:'rfYouTube',  label:'YouTube URL',           type:'text' },
-    { id:'rfInstagram',label:'Instagram URL',         type:'text' },
-    { id:'rfTikTok',   label:'TikTok URL',            type:'text' },
-    { id:'rfWebsite',  label:'Website URL',           type:'text' },
-    { id:'rfBio',      label:'Bio',                   type:'textarea' }
-  ],
-  'Actor': [
-    { id:'rfSubField', label:'Type (Film, TV, Stage, Voice)',              type:'text' },
-    { id:'rfPortfolio',label:'Reel / Demo URL',       type:'text' },
-    { id:'rfInstagram',label:'Instagram URL',         type:'text' },
-    { id:'rfWebsite',  label:'Website / IMDb URL',    type:'text' },
-    { id:'rfBio',      label:'Bio',                   type:'textarea' }
-  ],
-  'Fashion Designer': [
-    { id:'rfSubField', label:'Specialty (Streetwear, Luxury, Accessories)', type:'text' },
-    { id:'rfPortfolio',label:'Portfolio URL',         type:'text' },
-    { id:'rfInstagram',label:'Instagram URL',         type:'text' },
-    { id:'rfWebsite',  label:'Website URL',           type:'text' },
-    { id:'rfBio',      label:'Brand Story / Bio',     type:'textarea' }
-  ],
-  'Stylist': [
-    { id:'rfSubField', label:'Specialty (Editorial, Celebrity, Personal)', type:'text' },
-    { id:'rfPortfolio',label:'Portfolio URL',         type:'text' },
-    { id:'rfInstagram',label:'Instagram URL',         type:'text' },
-    { id:'rfWebsite',  label:'Website URL',           type:'text' },
-    { id:'rfBio',      label:'Bio',                   type:'textarea' }
-  ],
-  'Other': [
-    { id:'rfSubField', label:'Describe Your Creative Field',              type:'text' },
-    { id:'rfPortfolio',label:'Portfolio / Work URL',  type:'text' },
-    { id:'rfInstagram',label:'Instagram URL',         type:'text' },
-    { id:'rfWebsite',  label:'Website URL',           type:'text' },
-    { id:'rfBio',      label:'Bio',                   type:'textarea' }
-  ]
-};
-
-
-// Music roles that get songs streams royalties contracts
-const MUSIC_ROLES = ['Artist', 'Producer', 'Engineer', 'Manager', 'Record Label'];
-
-
-function switchAdminRole() {
-  const role      = document.getElementById('adminRoleSelect').value;
-  const color     = ROLE_COLORS[role] || '#B8860B';
-  const fields    = ROLE_FIELDS[role] || ROLE_FIELDS['Other'];
-  const container = document.getElementById('roleFormContainer');
-  const musicSec  = document.getElementById('musicDataSection');
-
-
-  if (!role) { container.innerHTML = ''; musicSec.style.display = 'none'; return; }
-
-
-  // Build dynamic form
-  const inputStyle = 'background:#222; border:1px solid #444; border-radius:6px;
-                      padding:10px; color:#eee; font-size:0.9rem; width:100%; box-sizing:border-box;';
-  const taStyle    = inputStyle + ' min-height:80px; resize:vertical;';
-
-
-  container.innerHTML =
-    '<div style="background:#1a1a1a; border:1px solid #333;' +
-    ' border-left:6px solid ' + color + '; border-radius:8px;' +
-    ' padding:24px; margin-bottom:24px;">' +
-    '<h3 style="color:' + color + '; margin-bottom:8px;">' + role + ' Profile Data</h3>' +
-    '<p style="color:#666; font-size:0.85rem; margin-bottom:16px;">Select a user then fill in their details</p>' +
-    '<div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">' +
-    '<select id="rfUserSelect"' +
-    ' style="' + inputStyle + ' grid-column:1/-1;"' +
-    ' onchange="loadUserDataForEdit()">' +
-    '<option value="">-- Select ' + role + ' --</option>' +
-    '</select>' +
-    fields.map(f => {
-      const isFullWidth = f.type === 'textarea' || f.id === 'rfBio';
-      const colSpan = isFullWidth ? ' grid-column:1/-1;' : '';
-      if (f.type === 'textarea') {
-        return '<textarea id="' + f.id + '" placeholder="' + f.label + '"' +
-          ' style="' + taStyle + colSpan + '"></textarea>';
-      }
-      return '<input id="' + f.id + '" placeholder="' + f.label + '"' +
-        ' type="' + f.type + '"' +
-        ' style="' + inputStyle + colSpan + '">';
-    }).join('') +
-    '</div>' +
-    '<p id="roleFormMsg" style="margin-top:12px; font-size:0.9rem;"></p>' +
-    '<button style="margin-top:16px; width:100%; padding:12px;' +
-    ' background:' + color + '; color:#fff; font-weight:bold;' +
-    ' border:none; border-radius:6px; cursor:pointer; font-size:1rem;"' +
-    ' onclick="saveRoleData()">Save ' + role + ' Data</button>' +
-    '</div>';
-
-
-  // Load users for this role into dropdown
-  loadRoleUsers(role);
-
-
-  // Show music sections only for music roles
-  musicSec.style.display = MUSIC_ROLES.includes(role) ? 'block' : 'none';
-  if (MUSIC_ROLES.includes(role)) {
-    loadArtistDropdown('aSongArtist');
-    loadArtistDropdown('aStreamArtist');
-    loadArtistDropdown('aRoyaltyArtist');
-    loadArtistDropdown('aContractArtist');
-  }
-}
-
-
-async function loadRoleUsers(role) {
-  const res  = await fetch('/api/admin/all-users', { headers: { 'x-admin-key': adminKey } });
-  const data = await res.json();
-  const select = document.getElementById('rfUserSelect');
-  if (!select) return;
-  const filtered = data.filter(u => (u.Role || 'Artist') === role);
-  select.innerHTML = '<option value="">-- Select ' + role + ' --</option>' +
-    filtered.map(u =>
-      '<option value="' + u.Login_ID + '" data-artistid="' + (u.Artist_ID || '') + '">' +
-      u.Artist_Name + ' (' + (u.TAP_ID || 'No TAP ID') + ')</option>'
-    ).join('');
-}
-
-
-async function loadUserDataForEdit() {
-  const select   = document.getElementById('rfUserSelect');
-  const loginId  = select.value;
-  if (!loginId) return;
-  const artistId = select.options[select.selectedIndex].dataset.artistid;
-  if (!artistId) return;
-  try {
-    const res  = await fetch('/api/admin/user-profile/' + artistId, {
-      headers: { 'x-admin-key': adminKey }
-    });
-    const data = await res.json();
-    // Fill in fields if they exist
-    const fill = (id, val) => { const el = document.getElementById(id); if (el && val) el.value = val; };
-    fill('rfGenre',     data.Genre_Specialty  || data.Genre_ID);
-    fill('rfAscap',     data.ASCAP_ID);
-    fill('rfLabel',     data.Label_Name       || data.Signed_2_Label);
-    fill('rfManager',   data.Manager_Name);
-    fill('rfOwner',     data.Label_Owner);
-    fill('rfRoster',    data.Roster_Size);
-    fill('rfDaw',       data.DAW_Software);
-    fill('rfEngType',   data.Engineer_Type);
-    fill('rfStudio',    data.Studio_Name);
-    fill('rfSubField',  data.Creative_SubField || data.Creative_Field);
-    fill('rfYearsExp',  data.Years_Experience);
-    fill('rfBio',       data.Bio);
-    fill('rfWebsite',   data.Website_URL);
-    fill('rfPortfolio', data.Portfolio_URL);
-    fill('rfSpotify',   data.Artist_Spotify_URL);
-    fill('rfApple',     data.Artist_Apple_URL);
-    fill('rfInstagram', data.Artist_Instagram_URL);
-    fill('rfTikTok',    data.Artist_TikTok_URL);
-    fill('rfYouTube',   data.Artist_Youtube_URL);
-  } catch { }
-}
-
-
-async function saveRoleData() {
-  const select   = document.getElementById('rfUserSelect');
-  const artistId = select.options[select.selectedIndex]?.dataset.artistid;
-  const msg      = document.getElementById('roleFormMsg');
-  const role     = document.getElementById('adminRoleSelect').value;
-  const color    = ROLE_COLORS[role] || '#B8860B';
-  if (!artistId) { msg.style.color = '#f44336'; msg.textContent = 'Please select a user first.'; return; }
-
-
-  const val = id => { const el = document.getElementById(id); return el ? el.value.trim() : null; };
-
-
-  const payload = {
-    artistId,
-    role,
-    genre:        val('rfGenre'),
-    ascapId:      val('rfAscap'),
-    labelName:    val('rfLabel'),
-    labelOwner:   val('rfOwner'),
-    rosterSize:   val('rfRoster'),
-    managerName:  val('rfManager'),
-    dawSoftware:  val('rfDaw'),
-    engineerType: val('rfEngType'),
-    studioName:   val('rfStudio'),
-    subField:     val('rfSubField'),
-    yearsExp:     val('rfYearsExp'),
-    bio:          val('rfBio'),
-    websiteUrl:   val('rfWebsite'),
-    portfolioUrl: val('rfPortfolio'),
-    spotify:      val('rfSpotify'),
-    apple:        val('rfApple'),
-    instagram:    val('rfInstagram'),
-    tiktok:       val('rfTikTok'),
-    youtube:      val('rfYouTube'),
-  };
-
-
-  const res  = await fetch('/api/admin/update-role-data', {
-    method:  'POST',
-    headers: { 'x-admin-key': adminKey, 'Content-Type': 'application/json' },
-    body:    JSON.stringify(payload)
-  });
-  const data = await res.json();
-  msg.style.color = res.ok ? color : '#f44336';
-  msg.textContent = data.message;
-}
-
-
-
-async function loadAllUsers() {
-  const res  = await fetch('/api/admin/all-users', { headers: { 'x-admin-key': adminKey } });
-  const data = await res.json();
-  const list = document.getElementById('allUsersList');
-  if (!data.length) { list.innerHTML = '<p class=empty-msg>No users yet.</p>'; return; }
-
-
-  const roles = [...new Set(data.map(u => u.Role || 'Artist'))];
-
-
-  list.innerHTML = roles.map(role => {
-    const color   = ROLE_COLORS[role] || '#B8860B';
-    const users   = data.filter(u => (u.Role || 'Artist') === role);
-    return '<div style="margin-bottom:32px;">' +
-      '<div style="background:' + color + '22; border-left:4px solid ' + color + ';' +
-      ' border-radius:8px 8px 0 0; padding:12px 20px; margin-bottom:0;">' +
-      '<h3 style="color:' + color + '; margin:0;">' + role + 's (' + users.length + ')</h3>' +
-      '</div>' +
-      users.map(u => renderUserCard(u, color)).join('') +
-      '</div>';
-  }).join('');
-}
-
-
-function renderUserCard(u, color) {
-  const socials = [
-    { url: u.Artist_Spotify_URL,   label: 'Spotify',     c: '#1DB954' },
-    { url: u.Artist_Instagram_URL, label: 'Instagram',   c: '#E1306C' },
-    { url: u.Artist_TikTok_URL,    label: 'TikTok',      c: '#69C9D0' },
-    { url: u.Artist_Youtube_URL,   label: 'YouTube',     c: '#FF0000' },
-    { url: u.Artist_Apple_URL,     label: 'Apple Music', c: '#FC3C44' }
-  ].filter(s => s.url && s.url.trim() !== '');
-
-
-  const attrs = [
-    u.Artist_City    ? u.Artist_City + (u.Artist_State ? ', ' + u.Artist_State : '') : null,
-    u.Genre_Specialty ? 'Genre: ' + u.Genre_Specialty : null,
-    u.Creative_Field  ? 'Field: ' + u.Creative_Field   : null,
-    u.Studio_Name     ? 'Studio: ' + u.Studio_Name     : null,
-    u.Label_Name      ? 'Label: ' + u.Label_Name       : null,
-    u.DAW_Software    ? 'DAW: ' + u.DAW_Software        : null,
-    u.Years_Experience ? u.Years_Experience + ' yrs exp' : null
-  ].filter(Boolean);
-
-
-  return '<div style="background:#1a1a1a; border:1px solid #222;' +
-    ' border-left:4px solid ' + color + '; border-radius:0 0 8px 8px;' +
-    ' padding:16px 20px; margin-bottom:2px;' +
-    ' display:flex; justify-content:space-between; align-items:flex-start; flex-wrap:wrap; gap:12px;">' +
-    '<div style="flex:1;">' +
-    '<div style="display:flex; align-items:center; gap:10px; margin-bottom:6px;">' +
-    '<div style="width:36px; height:36px; border-radius:50%;' +
-    ' background:' + color + '44; border:2px solid ' + color + ';' +
-    ' display:flex; align-items:center; justify-content:center;' +
-    ' color:' + color + '; font-weight:bold; font-size:0.85rem;">' +
-    (u.Artist_Name || 'U').charAt(0).toUpperCase() + '</div>' +
-    '<div>' +
-    '<div style="color:#eee; font-weight:600;">' + (u.Artist_Name || 'Unknown') + '</div>' +
-    '<div style="color:#666; font-size:0.78rem; font-family:monospace;">' + (u.TAP_ID || 'No TAP ID') + '</div>' +
-    '</div></div>' +
-    '<div style="color:#888; font-size:0.82rem;">' + (u.Artist_Email || '') + '</div>' +
-    (attrs.length ? '<div style="margin-top:6px; display:flex; flex-wrap:wrap; gap:6px;">' +
-    attrs.map(a => '<span style="background:#222; border:1px solid #333;' +
-    ' border-radius:4px; padding:2px 8px; color:#aaa; font-size:0.75rem;">' + a + '</span>').join('') +
-    '</div>' : '') +
-    (socials.length ? '<div style="margin-top:8px; display:flex; gap:6px; flex-wrap:wrap;">' +
-    socials.map(s => '<a href="' + s.url + '" target="_blank"' +
-    ' style="padding:3px 10px; border-radius:12px; font-size:0.72rem; font-weight:bold;' +
-    ' background:' + s.c + '22; border:1px solid ' + s.c + '; color:' + s.c + ';' +
-    ' text-decoration:none;">' + s.label + '</a>').join('') + '</div>' : '') +
-    '</div>' +
-    '<div style="color:#555; font-size:0.75rem; text-align:right;">' +
-    'Joined: ' + new Date(u.Created_Date).toLocaleDateString() + '</div>' +
-    '</div>';
-}
-
-
-
   </script>
 
-<!-- Copyright Footer -->
-<footer style="
-  text-align: center;
-  padding: 20px;
-  margin-top: 40px;
-  border-top: 1px solid #222;
-  color: #444;
-  font-size: 0.75rem;
-  letter-spacing: 1px;
-  font-family: Arial, sans-serif;">
-  &copy; 2026 B.B.ALLC. All Rights Reserved.
-</footer>
-
+  <footer style="text-align:center;padding:20px;margin-top:40px;border-top:1px solid #222;color:#444;font-size:0.75rem;letter-spacing:1px;font-family:Arial,sans-serif;">
+    &copy; 2026 B.B.ALLC. All Rights Reserved.
+  </footer>
 
 </body>
 </html>
