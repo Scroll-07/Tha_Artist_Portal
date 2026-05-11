@@ -3,7 +3,6 @@
  * Unauthorized copying prohibited
  */
 
-
 // ── Tab switching on login page ─────────────────────────────────
 function showTab(tab) {
   document.querySelectorAll(".tab-content").forEach(el => el.classList.remove("active"));
@@ -12,12 +11,10 @@ function showTab(tab) {
   document.querySelector('[onclick="showTab(\'' + tab + '\')"]').classList.add("active");
 }
 
-
 // ── Role specific fields ─────────────────────────────────────────
 function updateRoleFields() {
   const role = document.getElementById('regRole').value;
   const container = document.getElementById('roleSpecificFields');
-
 
   const fieldSets = {
     'Artist': `
@@ -27,19 +24,16 @@ function updateRoleFields() {
       <input type='text' id='regLabel'    placeholder='Record Label (if signed)'>
       <input type='text' id='regManagerId' placeholder='Manager TAP ID (optional)'>`,
 
-
     'Manager': `
       <p class='section-divider'>Manager Details</p>
       <input type='text' id='regLabel'    placeholder='Label or Company Name'>
       <input type='text' id='regRoster'   placeholder='Number of Artists on Roster'>`,
-
 
     'Producer': `
       <p class='section-divider'>Producer Details</p>
       <input type='text' id='regGenre'      placeholder='Genre Specialty (e.g. Trap, R&B, Pop)'>
       <input type='text' id='regDaw'        placeholder='DAW Software (e.g. FL Studio, Logic Pro)'>
       <input type='text' id='regYearsExp'   placeholder='Years of Experience'>`,
-
 
     'Engineer': `
       <p class='section-divider'>Engineer Details</p>
@@ -48,50 +42,55 @@ function updateRoleFields() {
       <input type='text' id='regDaw'        placeholder='DAW Software'>
       <input type='text' id='regYearsExp'   placeholder='Years of Experience'>`,
 
-
     'Record Label': `
       <p class='section-divider'>Label Details</p>
       <input type='text' id='regLabel'      placeholder='Label Name'>
       <input type='text' id='regLabelOwner' placeholder='Label Owner Name'>
       <input type='text' id='regRoster'     placeholder='Number of Artists on Roster'>`,
 
-
     'Painter': `
       <p class='section-divider'>Artist Details</p>
       <input type='text' id='regSubField'   placeholder='Art Style (e.g. Abstract, Realism, Digital)'>`,
-
 
     'Photographer': `
       <p class='section-divider'>Photographer Details</p>
       <input type='text' id='regSubField'   placeholder='Specialty (e.g. Portrait, Concert, Commercial)'>`,
 
-
     'Filmmaker': `
       <p class='section-divider'>Filmmaker Details</p>
       <input type='text' id='regSubField'   placeholder='Specialty (e.g. Music Videos, Short Films, Docs)'>`,
-
 
     'Fashion Designer': `
       <p class='section-divider'>Fashion Details</p>
       <input type='text' id='regSubField'   placeholder='Specialty (e.g. Streetwear, Luxury, Accessories)'>`,
 
-
     'Dancer': `
       <p class='section-divider'>Dancer Details</p>
       <input type='text' id='regSubField'   placeholder='Dance Style (e.g. Hip Hop, Contemporary, Ballet)'>`,
-  };
 
+    'Graphic Designer': `
+      <p class='section-divider'>Design Details</p>
+      <input type='text' id='regSubField'   placeholder='Specialty (e.g. Branding, Motion, Print)'>`,
+
+    'Videographer': `
+      <p class='section-divider'>Videographer Details</p>
+      <input type='text' id='regSubField'   placeholder='Specialty (e.g. Events, Commercial, Content)'>`,
+
+    'Actor': `
+      <p class='section-divider'>Acting Details</p>
+      <input type='text' id='regSubField'   placeholder='Type (e.g. Film, TV, Stage, Voice)'>`,
+
+    'Stylist': `
+      <p class='section-divider'>Stylist Details</p>
+      <input type='text' id='regSubField'   placeholder='Specialty (e.g. Editorial, Celebrity, Personal)'>`,
+  };
 
   const html = fieldSets[role] || `
     <p class='section-divider'>Creative Details</p>
     <input type='text' id='regSubField' placeholder='Describe your creative field'>`;
 
-
   container.innerHTML = `<div class='register-grid' style='margin-top:0'>${html}</div>`;
 }
-
-
-
 
 // ── Register ────────────────────────────────────────────────────
 async function registerArtist() {
@@ -101,17 +100,13 @@ async function registerArtist() {
   const pass  = document.getElementById('regPass').value;
   const msg   = document.getElementById('regMsg');
 
-
   if (!role || !name || !email || !pass) {
     msg.style.color = '#f44336';
     msg.textContent = 'Role, name, email and password are required.';
     return;
   }
 
-
-  // Helper to safely get field value
   const val = id => { const el = document.getElementById(id); return el ? el.value.trim() : ''; };
-
 
   const payload = {
     role,
@@ -140,7 +135,6 @@ async function registerArtist() {
     subField:     val('regSubField'),
   };
 
-
   try {
     const res  = await fetch('/api/register', {
       method:  'POST',
@@ -154,7 +148,6 @@ async function registerArtist() {
     msg.textContent = 'Something went wrong. Try again.';
   }
 }
-
 
 // ── Login ────────────────────────────────────────────────────────
 async function loginArtist() {
@@ -177,15 +170,14 @@ async function loginArtist() {
   } catch { msg.textContent = 'Login failed. Try again.'; }
 }
 
-
-
 // ── Logout ──────────────────────────────────────────────────────
 function logout() {
   localStorage.removeItem("artistToken");
   localStorage.removeItem("artistName");
+  localStorage.removeItem("artistRole");
+  localStorage.removeItem("artistTapId");
   window.location.href = "index.html";
 }
-
 
 // ── Load dashboard data ─────────────────────────────────────────
 async function loadDashboard() {
@@ -195,7 +187,6 @@ async function loadDashboard() {
   const tapId = localStorage.getItem('artistTapId') || '';
   if (!token) { window.location.href = 'index.html'; return; }
   document.getElementById('welcomeMsg').textContent = 'Welcome back, ' + name;
-  // Show role badge and TAP ID if elements exist
   const roleBadge = document.getElementById('roleBadge');
   const tapIdEl   = document.getElementById('tapIdDisplay');
   if (roleBadge) roleBadge.textContent = role;
@@ -213,10 +204,12 @@ async function loadDashboard() {
   renderSongs(songs);
   renderContracts(contracts);
   renderSocial(social);
+  loadCollabRequests();
+  loadNotificationCount();
+  showLoginNotifPopup();
 }
 
-
-
+// ── Render functions ─────────────────────────────────────────────
 function renderStreams(data) {
   const el = document.getElementById("streamsContainer");
   if (!data.length) { el.innerHTML = "<p class=no-data>No stream data yet.</p>"; return; }
@@ -226,7 +219,6 @@ function renderStreams(data) {
     "<div class=stream-label>Total Streams</div></div>"
   ).join("");
 }
-
 
 function renderRoyalties(data) {
   const tb = document.getElementById("royaltiesBody");
@@ -238,7 +230,6 @@ function renderRoyalties(data) {
     "<td><span class=status-" + (r.Status_On_Royaltiy||"").toLowerCase().replace(/ /g,"-") + ">" + (r.Status_On_Royaltiy||"-") + "</span></td></tr>"
   ).join("");
 }
-
 
 function renderSongs(data) {
   const tb = document.getElementById("songsBody");
@@ -265,7 +256,6 @@ function renderSongs(data) {
   ).join("");
 }
 
-
 function renderContracts(data) {
   const el = document.getElementById("contractsContainer");
   if (!data.length) { el.innerHTML = "<p class=no-data>No contracts on file.</p>"; return; }
@@ -288,15 +278,11 @@ function renderContracts(data) {
 function renderSocial(data) {
   const el = document.getElementById("socialContainer");
   if (!el) return;
-
-  // Handle if data comes back as array or object
   const d = Array.isArray(data) ? data[0] : data;
-
   if (!d) {
     el.innerHTML = "<p class=no-data>No platform links added yet. Update your profile to add them.</p>";
     return;
   }
-
   const platforms = [
     { name: "Spotify",     url: d.Artist_Spotify_URL,   color: "#1DB954", icon: "M12 0C5.4 0 0 5.4 0 12s5.4 12 12 12 12-5.4 12-12S18.66 0 12 0zm5.521 17.34c-.24.359-.66.48-1.021.24-2.82-1.74-6.36-2.101-10.561-1.141-.418.122-.779-.179-.899-.539-.12-.421.18-.78.54-.9 4.56-1.021 8.52-.6 11.64 1.32.42.18.479.659.301 1.02zm1.44-3.3c-.301.42-.841.6-1.262.3-3.239-1.98-8.159-2.58-11.939-1.38-.479.12-1.02-.12-1.14-.6-.12-.48.12-1.021.6-1.141C9.6 9.9 15 10.561 18.72 12.84c.361.181.54.78.241 1.2zm.12-3.36C15.24 8.4 8.82 8.16 5.16 9.301c-.6.179-1.2-.181-1.38-.721-.18-.601.18-1.2.72-1.381 4.26-1.26 11.28-1.02 15.721 1.621.539.3.719 1.02.419 1.56-.299.421-1.02.599-1.559.3z" },
     { name: "Apple Music", url: d.Artist_Apple_URL,     color: "#FC3C44", icon: "M23.994 6.124a9.23 9.23 0 00-.24-2.19c-.317-1.31-1.062-2.31-2.18-3.043a5.022 5.022 0 00-1.877-.726 10.496 10.496 0 00-1.564-.15c-.04-.003-.083-.01-.124-.013H5.986c-.152.01-.303.017-.455.026C4.786.07 4.043.15 3.34.428 2.004.958 1.04 1.88.475 3.208A4.98 4.98 0 00.05 4.783c-.01.154-.017.308-.026.462v13.55c.01.155.018.31.027.465.05.848.197 1.674.544 2.45.717 1.616 1.975 2.641 3.69 3.066a8.98 8.98 0 001.979.24c.908.027 1.817.023 2.725.023h8.476c.91 0 1.82.004 2.728-.023a8.382 8.382 0 002.206-.4c1.536-.535 2.585-1.538 3.163-3.051.273-.713.41-1.457.45-2.218.012-.2.02-.4.024-.6V6.66c-.005-.178-.013-.356-.022-.535zm-6.76 8.24c0 .402-.01.804-.033 1.204-.032.557-.17 1.09-.507 1.55-.443.603-1.045.94-1.78.99-.496.033-.977-.073-1.43-.283-.63-.293-1.107-.764-1.476-1.355-.48-.77-.718-1.617-.787-2.51a7.37 7.37 0 01-.02-.6V6.7c0-.56.28-.924.82-1.036a.958.958 0 01.195-.02c.59 0 .985.39.985.98v4.97c0 .102.003.204.012.305.04.452.18.872.45 1.24.363.494.858.757 1.47.746.594-.01 1.07-.28 1.41-.76.267-.377.387-.805.413-1.258.01-.18.01-.36.01-.54V6.69c0-.56.28-.924.82-1.036a.958.958 0 01.195-.02c.59 0 .984.39.984.98v8.73z" },
@@ -304,14 +290,11 @@ function renderSocial(data) {
     { name: "TikTok",      url: d.Artist_TikTok_URL,    color: "#69C9D0", icon: "M12.525.02c1.31-.02 2.61-.01 3.91-.02.08 1.53.63 3.09 1.75 4.17 1.12 1.11 2.7 1.62 4.24 1.79v4.03c-1.44-.05-2.89-.35-4.2-.97-.57-.26-1.1-.59-1.62-.93-.01 2.92.01 5.84-.02 8.75-.08 1.4-.54 2.79-1.35 3.94-1.31 1.92-3.58 3.17-5.91 3.21-1.43.08-2.86-.31-4.08-1.03-2.02-1.19-3.44-3.37-3.65-5.71-.02-.5-.03-1-.01-1.49.18-1.9 1.12-3.72 2.58-4.96 1.66-1.44 3.98-2.13 6.15-1.72.02 1.48-.04 2.96-.04 4.44-.99-.32-2.15-.23-3.02.37-.63.41-1.11 1.04-1.36 1.75-.21.51-.15 1.07-.14 1.61.24 1.64 1.82 3.02 3.5 2.87 1.12-.01 2.19-.66 2.77-1.61.19-.33.4-.67.41-1.06.1-1.79.06-3.57.07-5.36.01-4.03-.01-8.05.02-12.07z" },
     { name: "YouTube",     url: d.Artist_Youtube_URL,   color: "#FF0000", icon: "M23.495 6.205a3.007 3.007 0 00-2.088-2.088c-1.87-.501-9.396-.501-9.396-.501s-7.507-.01-9.396.501A3.007 3.007 0 00.527 6.205a31.247 31.247 0 00-.522 5.805 31.247 31.247 0 00.522 5.783 3.007 3.007 0 002.088 2.088c1.868.502 9.396.502 9.396.502s7.506 0 9.396-.502a3.007 3.007 0 002.088-2.088 31.247 31.247 0 00.5-5.783 31.247 31.247 0 00-.5-5.805zM9.609 15.601V8.408l6.264 3.602z" }
   ];
-
   const links = platforms.filter(p => p.url && p.url.trim() !== "");
-
   if (!links.length) {
     el.innerHTML = "<p class=no-data>No platform links added yet. Update your profile to add them.</p>";
     return;
   }
-
   el.innerHTML = links.map(p =>
     "<a href='" + p.url + "' target='_blank' rel='noopener noreferrer' class='social-card'>" +
     "<div class='social-icon-wrap' style='background:" + p.color + "22; border:1.5px solid " + p.color + "'>" +
@@ -323,16 +306,9 @@ function renderSocial(data) {
   ).join("");
 }
 
-
-// Add this line at the very end of your loadDashboard function
-loadCollabRequests();
-
-
 // ── Discover Page ────────────────────────────────────────────────
-
-
 async function searchCreatives() {
-  const token    = localStorage.getItem('artistToken');
+  const token = localStorage.getItem('artistToken');
   if (!token) { window.location.href = 'index.html'; return; }
   const name     = document.getElementById('searchName').value.trim();
   const role     = document.getElementById('searchRole').value;
@@ -357,7 +333,6 @@ async function searchCreatives() {
   }
 }
 
-
 function clearSearch() {
   ['searchName','searchCity','searchState'].forEach(id => {
     document.getElementById(id).value = '';
@@ -369,12 +344,11 @@ function clearSearch() {
   document.getElementById('resultCount').textContent = '';
 }
 
-
 function renderProfiles(data) {
   const grid  = document.getElementById('profileGrid');
   const count = document.getElementById('resultCount');
   if (!data.length) {
-    grid.innerHTML  = '<p class=no-results>No creatives found. Try a different search.</p>';
+    grid.innerHTML    = '<p class=no-results>No creatives found. Try a different search.</p>';
     count.textContent = '';
     return;
   }
@@ -389,8 +363,6 @@ function renderProfiles(data) {
       { url: p.Artist_Youtube_URL,   bg: '#FF0000', label: 'YT' },
       { url: p.Artist_Apple_URL,     bg: '#FC3C44', label: 'AM' }
     ].filter(s => s.url && s.url.trim() !== '');
-
-
     return '<div class=profile-card onclick="openProfile(' + p.Login_ID + ')">' +
       '<div class=profile-avatar>' + initials + '</div>' +
       '<div class=profile-name>' + (p.Artist_Name || 'Unknown') + '</div>' +
@@ -408,18 +380,15 @@ function renderProfiles(data) {
   }).join('');
 }
 
-
 async function openProfile(loginId) {
   const token = localStorage.getItem('artistToken');
   try {
-    const res  = await fetch('/api/discover/' + loginId, {
+    const res = await fetch('/api/discover/' + loginId, {
       headers: { 'Authorization': token }
     });
     const p = await res.json();
     const initials = (p.Artist_Name || 'U').split(' ').map(w => w[0]).join('').toUpperCase().slice(0,2);
     const location = [p.Artist_City, p.Artist_State, p.Artist_Country].filter(Boolean).join(', ') || 'Not set';
-
-
     const socialLinks = [
       { url: p.Artist_Spotify_URL,   color: '#1DB954', name: 'Spotify' },
       { url: p.Artist_Instagram_URL, color: '#E1306C', name: 'Instagram' },
@@ -427,8 +396,6 @@ async function openProfile(loginId) {
       { url: p.Artist_Youtube_URL,   color: '#FF0000', name: 'YouTube' },
       { url: p.Artist_Apple_URL,     color: '#FC3C44', name: 'Apple Music' }
     ].filter(s => s.url && s.url.trim() !== '');
-
-
     document.getElementById('profileModalContent').innerHTML =
       '<div class=pm-avatar>' + initials + '</div>' +
       '<div class=pm-name>' + (p.Artist_Name || 'Unknown') + '</div>' +
@@ -451,15 +418,11 @@ async function openProfile(loginId) {
       'Send Request</button>' +
       '<p id=collabMsg style="margin-top:8px; font-size:0.85rem;"></p>' +
       '</div>';
-
-
     document.getElementById('profileModal').classList.add('active');
   } catch {
     alert('Could not load profile. Try again.');
   }
 }
-
-
 
 async function sendCollabRequest(receiverLoginId) {
   const token   = localStorage.getItem('artistToken');
@@ -484,7 +447,6 @@ async function sendCollabRequest(receiverLoginId) {
   }
 }
 
-
 // Auto load on discover page
 if (document.getElementById('profileGrid')) {
   const token = localStorage.getItem('artistToken');
@@ -492,14 +454,12 @@ if (document.getElementById('profileGrid')) {
   searchCreatives();
 }
 
-
-
-
 // ── Profile Modal ────────────────────────────────────────────────
 async function openProfileModal() {
   const token = localStorage.getItem("artistToken");
+  const role  = localStorage.getItem("artistRole") || "Artist";
   try {
-    const res  = await fetch("/api/profile", {
+    const res = await fetch("/api/profile", {
       headers: { "Authorization": token }
     });
     if (res.ok) {
@@ -509,15 +469,60 @@ async function openProfileModal() {
       document.getElementById("updPhone").value     = data.Artist_Phone_Number  || "";
       document.getElementById("updCity").value      = data.Artist_City          || "";
       document.getElementById("updState").value     = data.Artist_State         || "";
-      document.getElementById("updGenre").value     = data.Genre                || "";
       document.getElementById("updInstagram").value = data.Artist_Instagram_URL || "";
       document.getElementById("updTikTok").value    = data.Artist_TikTok_URL    || "";
       document.getElementById("updSpotify").value   = data.Artist_Spotify_URL   || "";
       document.getElementById("updApple").value     = data.Artist_Apple_URL     || "";
       document.getElementById("updYouTube").value   = data.Artist_Youtube_URL   || "";
+
+      // Role-specific fields
+      const fill = (id, val) => { const el = document.getElementById(id); if (el) el.value = val || ""; };
+      fill("updGenre",    data.Genre_Specialty);
+      fill("updSubField", data.Creative_SubField || data.Creative_Field);
+      fill("updWebsite",  data.Website_URL);
+      fill("updPortfolio",data.Portfolio_URL);
+      fill("updDaw",      data.DAW_Software);
+      fill("updBio",      data.Bio);
+
+      // Change genre placeholder based on role
+      const genrePlaceholders = {
+        "Artist":          "Primary Genre (e.g. Hip Hop, R&B, Pop)",
+        "Producer":        "Genre Specialty",
+        "Engineer":        "Specialty (Mixing, Mastering, Recording, Live)",
+        "Painter":         "Art Style (e.g. Abstract, Realism, Digital)",
+        "Photographer":    "Photography Specialty (Portrait, Concert, Commercial)",
+        "Graphic Designer":"Design Specialty (Branding, Motion, Print)",
+        "Filmmaker":       "Film Specialty (Music Videos, Short Films, Docs)",
+        "Dancer":          "Dance Style (Hip Hop, Contemporary, Ballet)",
+        "Fashion Designer":"Fashion Specialty (Streetwear, Luxury, Accessories)",
+        "Actor":           "Acting Type (Film, TV, Stage, Voice)",
+        "Stylist":         "Styling Specialty (Editorial, Celebrity, Personal)",
+        "Manager":         "Industry Focus",
+        "Record Label":    "Label Genre Focus",
+        "Videographer":    "Video Specialty (Events, Commercial, Content)",
+        "Other":           "Your Creative Specialty"
+      };
+      const genreEl = document.getElementById("updGenre");
+      if (genreEl) genreEl.placeholder = genrePlaceholders[role] || "Primary Genre";
+
+      // Show DAW only for producers and engineers
+      const dawEl = document.getElementById("updDaw");
+      if (dawEl) dawEl.style.display = ["Producer","Engineer"].includes(role) ? "block" : "none";
+
+      // Show portfolio only for visual and creative roles
+      const portEl = document.getElementById("updPortfolio");
+      if (portEl) portEl.style.display = !["Artist","Manager","Record Label"].includes(role) ? "block" : "none";
+
+      // Show Spotify and Apple only for music roles
+      const showMusic = ["Artist","Producer","Engineer","Manager","Record Label"].includes(role);
+      const spotEl  = document.getElementById("updSpotify");
+      const appleEl = document.getElementById("updApple");
+      if (spotEl)  spotEl.closest ? spotEl.style.display  = showMusic ? "block" : "none" : null;
+      if (appleEl) appleEl.closest ? appleEl.style.display = showMusic ? "block" : "none" : null;
     }
   } catch { }
   document.getElementById("profileModal").classList.add("active");
+  loadNotifPreferences();
 }
 
 function closeProfileModal() {
@@ -541,10 +546,14 @@ async function saveProfile() {
     { key: "tiktok",     id: "updTikTok"    },
     { key: "spotify",    id: "updSpotify"   },
     { key: "apple",      id: "updApple"     },
-    { key: "youtube",    id: "updYouTube"   }
+    { key: "youtube",    id: "updYouTube"   },
+    { key: "subField",   id: "updSubField"  },
+    { key: "website",    id: "updWebsite"   },
+    { key: "portfolio",  id: "updPortfolio" },
+    { key: "daw",        id: "updDaw"       },
+    { key: "bio",        id: "updBio"       }
   ];
 
-  // Send ALL fields that have any value -- including pre-filled ones
   fields.forEach(f => {
     const el = document.getElementById(f.id);
     if (el && el.value.trim()) payload[f.key] = el.value.trim();
@@ -570,7 +579,7 @@ async function saveProfile() {
         localStorage.setItem("artistName", payload.artistName);
         document.getElementById("welcomeMsg").textContent = "Welcome back, " + payload.artistName;
       }
-      // Reload social links after saving
+      saveNotifPreferences();
       setTimeout(() => {
         closeProfileModal();
         loadDashboard();
@@ -580,6 +589,7 @@ async function saveProfile() {
     msg.textContent = "Something went wrong. Try again.";
   }
 }
+
 // ── Song Section ─────────────────────────────────────────────────
 function toggleSongForm() {
   const section = document.getElementById("addSongSection");
@@ -616,18 +626,18 @@ function editSong(id, name, album, releaseDate, duration,
 }
 
 async function submitSong() {
-  const token    = localStorage.getItem("artistToken");
+  const token     = localStorage.getItem("artistToken");
   const editingId = document.getElementById("editingSongId").value;
-  const msg      = document.getElementById("songMsg");
-  const payload  = {
-    songName:      document.getElementById("newSongName").value.trim(),
-    album:         document.getElementById("newAlbum").value.trim(),
-    releaseDate:   document.getElementById("newReleaseDate").value,
-    duration:      document.getElementById("newDuration").value.trim(),
-    isrc:          document.getElementById("newISRC").value.trim(),
-    featuredArtist:document.getElementById("newFeatured").value.trim(),
-    writersCredit: document.getElementById("newWriters").value.trim(),
-    producerName:  document.getElementById("newProducer").value.trim()
+  const msg       = document.getElementById("songMsg");
+  const payload   = {
+    songName:       document.getElementById("newSongName").value.trim(),
+    album:          document.getElementById("newAlbum").value.trim(),
+    releaseDate:    document.getElementById("newReleaseDate").value,
+    duration:       document.getElementById("newDuration").value.trim(),
+    isrc:           document.getElementById("newISRC").value.trim(),
+    featuredArtist: document.getElementById("newFeatured").value.trim(),
+    writersCredit:  document.getElementById("newWriters").value.trim(),
+    producerName:   document.getElementById("newProducer").value.trim()
   };
   if (!payload.songName) {
     msg.style.color = "#f44336";
@@ -666,13 +676,11 @@ async function deleteSong(id) {
   loadDashboard();
 }
 
-
-// ── Collab Requests ─────────────────────────────────────────────
+// ── Collab Requests ──────────────────────────────────────────────
 function showCollabTab(tab) {
   document.getElementById('collabReceived').style.display = tab === 'received' ? 'block' : 'none';
   document.getElementById('collabSent').style.display     = tab === 'sent'     ? 'block' : 'none';
 }
-
 
 async function loadCollabRequests() {
   const token = localStorage.getItem('artistToken');
@@ -686,7 +694,6 @@ async function loadCollabRequests() {
     renderCollabSent(data.sent || []);
   } catch { }
 }
-
 
 function renderCollabReceived(data) {
   const el = document.getElementById('collabReceived');
@@ -719,7 +726,6 @@ function renderCollabReceived(data) {
   ).join('');
 }
 
-
 function renderCollabSent(data) {
   const el = document.getElementById('collabSent');
   if (!el) return;
@@ -743,7 +749,6 @@ function renderCollabSent(data) {
   ).join('');
 }
 
-
 async function respondToCollab(requestId, status) {
   const token = localStorage.getItem('artistToken');
   const res   = await fetch('/api/collab-request/' + requestId, {
@@ -756,10 +761,139 @@ async function respondToCollab(requestId, status) {
   loadCollabRequests();
 }
 
+// ── Notifications ─────────────────────────────────────────────────
+async function loadNotificationCount() {
+  const token = localStorage.getItem('artistToken');
+  if (!token) return;
+  try {
+    const res  = await fetch('/api/notifications/count', {
+      headers: { 'Authorization': token }
+    });
+    const data = await res.json();
+    const badge = document.getElementById('notifCount');
+    if (badge) {
+      badge.textContent = data.unread;
+      badge.style.display = data.unread > 0 ? 'flex' : 'none';
+    }
+  } catch { }
+}
 
+async function toggleNotifPanel() {
+  const panel = document.getElementById('notifPanel');
+  if (!panel) return;
+  if (panel.style.display === 'none') {
+    panel.style.display = 'block';
+    await loadNotifications();
+  } else {
+    panel.style.display = 'none';
+  }
+}
 
+async function loadNotifications() {
+  const token = localStorage.getItem('artistToken');
+  try {
+    const res  = await fetch('/api/notifications', {
+      headers: { 'Authorization': token }
+    });
+    const data = await res.json();
+    const list = document.getElementById('notifList');
+    if (!list) return;
+    if (!data.length) {
+      list.innerHTML = '<p style="padding:16px; color:#555; font-style:italic;">No notifications yet.</p>';
+      return;
+    }
+    list.innerHTML = data.map(n =>
+      '<div style="padding:12px 16px; border-bottom:1px solid #222;' +
+      ' background:' + (n.Is_Read ? '#111' : '#1a1a1a') + ';">' +
+      '<div style="color:' + (n.Is_Read ? '#666' : '#eee') + '; font-size:0.85rem;">' +
+      (n.Message || '') + '</div>' +
+      '<div style="color:#555; font-size:0.75rem; margin-top:4px;">' +
+      new Date(n.Created_At).toLocaleDateString() + '</div>' +
+      '</div>'
+    ).join('');
+    await markAllRead();
+  } catch { }
+}
 
-// Auto-run when on dashboard page
+async function markAllRead() {
+  const token = localStorage.getItem('artistToken');
+  try {
+    await fetch('/api/notifications/read', {
+      method: 'PUT', headers: { 'Authorization': token }
+    });
+    const badge = document.getElementById('notifCount');
+    if (badge) badge.style.display = 'none';
+  } catch { }
+}
+
+async function showLoginNotifPopup() {
+  const token = localStorage.getItem('artistToken');
+  if (!token) return;
+  try {
+    const res  = await fetch('/api/notifications/count', {
+      headers: { 'Authorization': token }
+    });
+    const data = await res.json();
+    if (data.unread > 0) {
+      const popup = document.createElement('div');
+      popup.style.cssText = 'position:fixed; bottom:24px; right:24px; z-index:9999;' +
+        'background:#1a1a1a; border:1px solid #B8860B; border-radius:12px;' +
+        'padding:16px 20px; max-width:300px; box-shadow:0 8px 32px rgba(0,0,0,0.8);';
+      popup.innerHTML =
+        '<div style="color:#D4AF37; font-weight:bold; margin-bottom:6px;">&#128276; New Notifications</div>' +
+        '<div style="color:#aaa; font-size:0.85rem;">You have ' + data.unread + ' unread notification' +
+        (data.unread !== 1 ? 's' : '') + ' since your last visit.</div>' +
+        '<div style="display:flex; gap:8px; margin-top:12px;">' +
+        '<button onclick="toggleNotifPanel(); this.closest(\'div\').parentElement.remove()"' +
+        ' style="flex:1; padding:8px; background:#B8860B; color:#000; border:none;' +
+        ' border-radius:6px; cursor:pointer; font-weight:bold;">View</button>' +
+        '<button onclick="this.closest(\'div\').parentElement.remove()"' +
+        ' style="flex:1; padding:8px; background:transparent; color:#666;' +
+        ' border:1px solid #333; border-radius:6px; cursor:pointer;">Dismiss</button>' +
+        '</div>';
+      document.body.appendChild(popup);
+      setTimeout(() => { if (popup.parentElement) popup.remove(); }, 8000);
+    }
+  } catch { }
+}
+
+async function loadNotifPreferences() {
+  const token = localStorage.getItem('artistToken');
+  try {
+    const res  = await fetch('/api/notifications/preferences', {
+      headers: { 'Authorization': token }
+    });
+    const data = await res.json();
+    const set  = (id, val) => { const el = document.getElementById(id); if (el) el.checked = val === 1; };
+    set('prefCollab',    data.Collab_Requests);
+    set('prefProfile',   data.Profile_Views);
+    set('prefMessages',  data.New_Messages);
+    set('prefFollowers', data.New_Followers);
+    set('prefCity',      data.New_Users_City);
+    set('prefEmail',     data.Email_Alerts);
+  } catch { }
+}
+
+async function saveNotifPreferences() {
+  const token = localStorage.getItem('artistToken');
+  const get   = id => { const el = document.getElementById(id); return el ? el.checked : false; };
+  try {
+    await fetch('/api/notifications/preferences', {
+      method:  'PUT',
+      headers: { 'Authorization': token, 'Content-Type': 'application/json' },
+      body:    JSON.stringify({
+        collabRequests: get('prefCollab'),
+        profileViews:   get('prefProfile'),
+        newMessages:    get('prefMessages'),
+        newFollowers:   get('prefFollowers'),
+        newUsersCity:   get('prefCity'),
+        emailAlerts:    get('prefEmail')
+      })
+    });
+  } catch { }
+}
+
+// ── Auto-run when on dashboard page ─────────────────────────────
 if (document.getElementById("welcomeMsg")) loadDashboard();
 
 if ('serviceWorker' in navigator) {
