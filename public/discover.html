@@ -114,6 +114,43 @@
       padding:60px 20px; font-size:1rem;
     }
     .result-count { color:#666; font-size:0.85rem; margin-bottom:16px; }
+    /* ── Mobile responsive ── */
+@media (max-width: 768px) {
+  .discover-header {
+    padding: 14px 16px;
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+  .discover-header div:last-child {
+    width: 100%;
+    justify-content: flex-end;
+  }
+  .search-panel {
+    padding: 16px;
+    margin-bottom: 20px;
+  }
+  .search-grid {
+    grid-template-columns: 1fr;
+    gap: 10px;
+  }
+  .profile-grid {
+    grid-template-columns: 1fr;
+    gap: 14px;
+  }
+  .profile-modal-box {
+    margin: 16px;
+    padding: 20px;
+  }
+  .pm-socials {
+    flex-direction: column;
+  }
+  .pm-social-link {
+    justify-content: center;
+  }
+  .dash-main {
+    padding: 16px 12px;
+  }
+}
   </style>
 </head>
 <body class='dashboard-body'>
