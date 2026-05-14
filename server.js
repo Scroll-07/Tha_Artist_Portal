@@ -38,6 +38,71 @@ async function getPool() {
   return await sql.connect(dbConfig);
 }
 
+// Email sending helper
+const sgMail = require('@sendgrid/mail');
+sgMail.setApiKey(process.env.SENDGRID_API_KEY);
+
+async function sendEmail(to, subject, htmlContent) {
+  try {
+    await sgMail.send({
+      to,
+      from:    process.env.SENDGRID_FROM_EMAIL,
+      subject,
+      html:    htmlContent
+    });
+    console.log('Email sent to:', to);
+  } catch (err) {
+    console.error('Email send failed:', err.message);
+  }
+}
+
+async function createNotification(pool, recipientId, senderId, senderName,
+                                   type, message, link, recipientEmail) {
+  await pool.request()
+    .input('RecipID',  sql.Int,      recipientId)
+    .input('SendID',   sql.Int,      senderId    || null)
+    .input('SendName', sql.NVarChar, senderName  || null)
+    .input('Type',     sql.NVarChar, type)
+    .input('Msg',      sql.NVarChar, message     || null)
+    .input('Link',     sql.NVarChar, link        || null)
+    .query(`INSERT INTO Notifications
+      (Recipient_ID, Sender_ID, Sender_Name, Type, Message, Link)
+      VALUES (@RecipID, @SendID, @SendName, @Type, @Msg, @Link)`);
+
+  if (recipientEmail) {
+    try {
+      const prefs = await pool.request()
+        .input('LoginID', sql.Int, recipientId)
+        .query('SELECT * FROM Notification_Preferences WHERE Login_ID = @LoginID');
+      const p = prefs.recordset[0];
+      const emailEnabled = !p || p.Email_Alerts === 1;
+      if (emailEnabled) {
+        const subject = 'TAP Notification -- ' + senderName;
+        const html = `
+          <div style="font-family:Arial; max-width:500px; margin:0 auto;
+            background:#111; color:#eee; padding:32px; border-radius:12px;">
+            <h1 style="color:#D4AF37; margin-bottom:8px;">Tha Artist Portal</h1>
+            <p style="color:#888; margin-bottom:24px;">Your data. Your leverage.</p>
+            <div style="background:#1a1a1a; border-left:4px solid #D4AF37;
+              border-radius:8px; padding:20px; margin-bottom:24px;">
+              <p style="color:#eee; font-size:1rem; margin:0;">${message}</p>
+            </div>
+            <a href="${process.env.APP_URL}/dashboard.html"
+               style="background:#B8860B; color:#000; padding:12px 24px;
+               border-radius:6px; text-decoration:none; font-weight:bold;">
+              View on TAP</a>
+            <p style="color:#444; font-size:0.75rem; margin-top:24px;">
+              Copyright 2026 BOLAJI B ADEEKO LLC. All Rights Reserved.</p>
+          </div>`;
+        await sendEmail(recipientEmail, subject, html);
+      }
+    } catch (err) {
+      console.error('Notification email error:', err.message);
+    }
+  }
+}
+
+
 
 // Middleware to verify login token
 function authMiddleware(req, res, next) {
@@ -1007,6 +1072,181 @@ app.get('/api/admin/all-users', async (req, res) => {
   }
 });
 
+
+
+// ── NOTIFICATIONS ───────────────────────────────────────────────
+
+// GET unread notification count
+app.get('/api/notifications/count', authMiddleware, async (req, res) => {
+  try {
+    const pool   = await getPool();
+    const result = await pool.request()
+      .input('ID', sql.Int, req.artist.loginId)
+      .query('SELECT COUNT(*) AS Unread FROM Notifications WHERE Recipient_ID = @ID AND Is_Read = 0');
+    res.json({ unread: result.recordset[0].Unread });
+  } catch (err) { res.status(500).json({ message: 'Error.', error: err.message }); }
+});
+
+// GET all notifications
+app.get('/api/notifications', authMiddleware, async (req, res) => {
+  try {
+    const pool   = await getPool();
+    const result = await pool.request()
+      .input('ID', sql.Int, req.artist.loginId)
+      .query(`SELECT TOP 50 * FROM Notifications
+              WHERE Recipient_ID = @ID
+              ORDER BY Created_At DESC`);
+    res.json(result.recordset);
+  } catch (err) { res.status(500).json({ message: 'Error.', error: err.message }); }
+});
+
+// MARK notifications as read
+app.put('/api/notifications/read', authMiddleware, async (req, res) => {
+  try {
+    const pool = await getPool();
+    await pool.request()
+      .input('ID', sql.Int, req.artist.loginId)
+      .query('UPDATE Notifications SET Is_Read = 1 WHERE Recipient_ID = @ID AND Is_Read = 0');
+    res.json({ message: 'Marked as read.' });
+  } catch (err) { res.status(500).json({ message: 'Error.', error: err.message }); }
+});
+
+// GET notification preferences
+app.get('/api/notifications/preferences', authMiddleware, async (req, res) => {
+  try {
+    const pool   = await getPool();
+    const result = await pool.request()
+      .input('ID', sql.Int, req.artist.loginId)
+      .query('SELECT * FROM Notification_Preferences WHERE Login_ID = @ID');
+    res.json(result.recordset[0] || {
+      Collab_Requests: 1, Profile_Views: 1,
+      New_Messages: 1, New_Followers: 0,
+      New_Users_City: 0, Email_Alerts: 1
+    });
+  } catch (err) { res.status(500).json({ message: 'Error.', error: err.message }); }
+});
+
+// SAVE notification preferences
+app.put('/api/notifications/preferences', authMiddleware, async (req, res) => {
+  const { collabRequests, profileViews, newMessages,
+          newFollowers, newUsersCity, emailAlerts } = req.body;
+  try {
+    const pool = await getPool();
+    const existing = await pool.request()
+      .input('ID', sql.Int, req.artist.loginId)
+      .query('SELECT 1 FROM Notification_Preferences WHERE Login_ID = @ID');
+    if (existing.recordset.length > 0) {
+      await pool.request()
+        .input('ID',        sql.Int, req.artist.loginId)
+        .input('Collab',    sql.Bit, collabRequests ? 1 : 0)
+        .input('Profile',   sql.Bit, profileViews  ? 1 : 0)
+        .input('Messages',  sql.Bit, newMessages   ? 1 : 0)
+        .input('Followers', sql.Bit, newFollowers  ? 1 : 0)
+        .input('City',      sql.Bit, newUsersCity  ? 1 : 0)
+        .input('Email',     sql.Bit, emailAlerts   ? 1 : 0)
+        .query(`UPDATE Notification_Preferences SET
+          Collab_Requests=@Collab, Profile_Views=@Profile,
+          New_Messages=@Messages, New_Followers=@Followers,
+          New_Users_City=@City, Email_Alerts=@Email
+          WHERE Login_ID=@ID`);
+    } else {
+      await pool.request()
+        .input('ID',        sql.Int, req.artist.loginId)
+        .input('Collab',    sql.Bit, collabRequests ? 1 : 0)
+        .input('Profile',   sql.Bit, profileViews  ? 1 : 0)
+        .input('Messages',  sql.Bit, newMessages   ? 1 : 0)
+        .input('Followers', sql.Bit, newFollowers  ? 1 : 0)
+        .input('City',      sql.Bit, newUsersCity  ? 1 : 0)
+        .input('Email',     sql.Bit, emailAlerts   ? 1 : 0)
+        .query(`INSERT INTO Notification_Preferences
+          (Login_ID, Collab_Requests, Profile_Views,
+           New_Messages, New_Followers, New_Users_City, Email_Alerts)
+          VALUES (@ID,@Collab,@Profile,@Messages,@Followers,@City,@Email)`);
+    }
+    res.json({ message: 'Preferences saved!' });
+  } catch (err) { res.status(500).json({ message: 'Error.', error: err.message }); }
+});
+
+// ── MESSAGES ─────────────────────────────────────────────────────
+
+// GET conversations list
+app.get('/api/messages/conversations', authMiddleware, async (req, res) => {
+  try {
+    const pool   = await getPool();
+    const result = await pool.request()
+      .input('MyID', sql.Int, req.artist.loginId)
+      .query(`SELECT DISTINCT
+        m.Conversation_ID,
+        CASE WHEN m.Sender_ID = @MyID THEN m.Receiver_ID ELSE m.Sender_ID END AS Other_ID,
+        CASE WHEN m.Sender_ID = @MyID THEN l2.Artist_Name ELSE m.Sender_Name END AS Other_Name,
+        MAX(m.Sent_At) AS Last_Message_At,
+        SUM(CASE WHEN m.Is_Read = 0 AND m.Receiver_ID = @MyID THEN 1 ELSE 0 END) AS Unread_Count
+        FROM Messages m
+        LEFT JOIN ArtistLogins l2 ON
+          l2.Login_ID = CASE WHEN m.Sender_ID = @MyID THEN m.Receiver_ID ELSE m.Sender_ID END
+        WHERE m.Sender_ID = @MyID OR m.Receiver_ID = @MyID
+        GROUP BY m.Conversation_ID, m.Sender_ID, m.Receiver_ID,
+                 m.Sender_Name, l2.Artist_Name
+        ORDER BY Last_Message_At DESC`);
+    res.json(result.recordset);
+  } catch (err) { res.status(500).json({ message: 'Error.', error: err.message }); }
+});
+
+// GET messages in a conversation
+app.get('/api/messages/:conversationId', authMiddleware, async (req, res) => {
+  try {
+    const pool = await getPool();
+    await pool.request()
+      .input('ConvID', sql.NVarChar, req.params.conversationId)
+      .input('MyID',   sql.Int,      req.artist.loginId)
+      .query('UPDATE Messages SET Is_Read = 1 WHERE Conversation_ID = @ConvID AND Receiver_ID = @MyID');
+    const result = await pool.request()
+      .input('ConvID', sql.NVarChar, req.params.conversationId)
+      .query('SELECT * FROM Messages WHERE Conversation_ID = @ConvID ORDER BY Sent_At ASC');
+    res.json(result.recordset);
+  } catch (err) { res.status(500).json({ message: 'Error.', error: err.message }); }
+});
+
+// SEND a message
+app.post('/api/messages', authMiddleware, async (req, res) => {
+  const { receiverId, messageText } = req.body;
+  if (!receiverId || !messageText)
+    return res.status(400).json({ message: 'Receiver and message are required.' });
+  try {
+    const pool = await getPool();
+    const connected = await pool.request()
+      .input('S', sql.Int, req.artist.loginId)
+      .input('R', sql.Int, receiverId)
+      .query(`SELECT 1 FROM Collab_Requests
+              WHERE Status = 'Accepted'
+              AND ((Sender_Login_ID = @S AND Receiver_Login_ID = @R)
+              OR   (Sender_Login_ID = @R AND Receiver_Login_ID = @S))`);
+    if (connected.recordset.length === 0)
+      return res.status(403).json({ message: 'You can only message accepted connections.' });
+    const convId = [req.artist.loginId, parseInt(receiverId)].sort((a,b)=>a-b).join('-');
+    await pool.request()
+      .input('ConvID',   sql.NVarChar, convId)
+      .input('SenderID', sql.Int,      req.artist.loginId)
+      .input('SenderNm', sql.NVarChar, req.artist.name)
+      .input('RecvID',   sql.Int,      receiverId)
+      .input('Text',     sql.NVarChar, messageText)
+      .query(`INSERT INTO Messages
+        (Conversation_ID, Sender_ID, Sender_Name, Receiver_ID, Message_Text)
+        VALUES (@ConvID, @SenderID, @SenderNm, @RecvID, @Text)`);
+    const receiverInfo = await pool.request()
+      .input('RID', sql.Int, receiverId)
+      .query('SELECT Artist_Email FROM ArtistLogins WHERE Login_ID = @RID');
+    const receiverEmail = receiverInfo.recordset[0]?.Artist_Email;
+    await createNotification(
+      pool, receiverId, req.artist.loginId, req.artist.name,
+      'new_message',
+      req.artist.name + ' sent you a message',
+      '/dashboard.html',
+      receiverEmail
+    );
+    res.json({ message: 'Message sent!', conversationId: convId });
+  } catch (err) { res.status(500).json({ message: 'Error sending message.', error: err.message }); }
+});
 
 
 app.listen(PORT, () => console.log("Server running on port " + PORT));
