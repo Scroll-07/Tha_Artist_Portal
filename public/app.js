@@ -1033,6 +1033,7 @@ async function saveNotifPreferences() {
 }
 
 
+
 // ── Messaging ────────────────────────────────────────────────────
 
 
@@ -1138,8 +1139,6 @@ async function sendMessage() {
 
 // Auto load on messages page
 if (document.getElementById('convList')) loadConversations();
-
-
 
 
 
