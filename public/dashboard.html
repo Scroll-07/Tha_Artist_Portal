@@ -24,18 +24,57 @@
       <span id='tapIdDisplay' class='tap-id-display'></span>
     </div>
   </div>
-  <!-- <div style='display:flex; gap:10px;'>
+  <div style='display:flex; gap:10px; align-items:center; flex-wrap:wrap;'>
+    <!-- Bell notification icon -->
+    <button id='notifBell' onclick='toggleNotifPanel()'
+      style='position:relative; background:transparent; border:1px solid #333;
+             border-radius:50%; width:40px; height:40px; cursor:pointer;
+             color:#888; font-size:1.1rem; display:flex; align-items:center;
+             justify-content:center;'>
+      &#128276;
+      <span id='notifCount' style='display:none; position:absolute;
+        top:-4px; right:-4px; background:#B71C1C; color:#fff;
+        border-radius:50%; width:18px; height:18px; font-size:0.65rem;
+        font-weight:bold; display:flex; align-items:center;
+        justify-content:center;'>0</span>
+    </button>
+    <!-- Messages icon -->
+    <button onclick="window.location.href='messages.html'"
+      style='position:relative; background:transparent; border:1px solid #333;
+             border-radius:50%; width:40px; height:40px; cursor:pointer;
+             color:#888; font-size:1.1rem; display:flex; align-items:center;
+             justify-content:center;'>
+      &#128172;
+      <span id='msgCount' style='display:none; position:absolute;
+        top:-4px; right:-4px; background:#1565C0; color:#fff;
+        border-radius:50%; width:18px; height:18px; font-size:0.65rem;
+        font-weight:bold; display:flex; align-items:center;
+        justify-content:center;'>0</span>
+    </button>
+    <a href='discover.html' class='update-profile-btn'
+       style='text-decoration:none; display:flex; align-items:center;'>
+       &#128269; Discover</a>
     <button class='update-profile-btn' onclick='openProfileModal()'>Update Profile</button>
     <button class='logout-btn' onclick='logout()'>Logout</button>
-  </div> -->
-  <div style='display:flex; gap:10px;'>
-  <a href='discover.html' class='update-profile-btn'
-     style='text-decoration:none; display:flex; align-items:center;'>
-     &#128269; Discover
-  </a>
-  <button class='update-profile-btn' onclick='openProfileModal()'>Update Profile</button>
-  <button class='logout-btn' onclick='logout()'>Logout</button>
+  </div>
+</header>
+
+
+<!-- Notification dropdown panel -->
+<div id='notifPanel' style='display:none; position:fixed; top:70px; right:20px;
+  width:340px; max-height:400px; overflow-y:auto;
+  background:#1a1a1a; border:1px solid #B8860B; border-radius:12px;
+  z-index:999; box-shadow:0 8px 32px rgba(0,0,0,0.8);'>
+  <div style='display:flex; justify-content:space-between; align-items:center;
+    padding:14px 16px; border-bottom:1px solid #333;'>
+    <span style='color:#D4AF37; font-weight:bold;'>Notifications</span>
+    <button onclick='markAllRead()'
+      style='background:none; border:none; color:#666; cursor:pointer; font-size:0.8rem;'>
+      Mark all read</button>
+  </div>
+  <div id='notifList'></div>
 </div>
+
 
 </header>
 
@@ -162,6 +201,30 @@
         <input type="text" id="updApple"     placeholder="Apple Music URL">
         <input class="full-width" type="text" id="updYouTube" placeholder="YouTube URL">
       </div>
+
+<p class='modal-divider'>Notification Preferences</p>
+<div class='full-width' style='display:flex; flex-direction:column; gap:10px;'>
+  <label style='display:flex; align-items:center; gap:10px; color:#eee; cursor:pointer;'>
+    <input type='checkbox' id='prefCollab'   style='width:16px; height:16px;'>
+    Collab requests</label>
+  <label style='display:flex; align-items:center; gap:10px; color:#eee; cursor:pointer;'>
+    <input type='checkbox' id='prefProfile'  style='width:16px; height:16px;'>
+    Profile views</label>
+  <label style='display:flex; align-items:center; gap:10px; color:#eee; cursor:pointer;'>
+    <input type='checkbox' id='prefMessages' style='width:16px; height:16px;'>
+    New messages</label>
+  <label style='display:flex; align-items:center; gap:10px; color:#eee; cursor:pointer;'>
+    <input type='checkbox' id='prefFollowers' style='width:16px; height:16px;'>
+    New followers</label>
+  <label style='display:flex; align-items:center; gap:10px; color:#eee; cursor:pointer;'>
+    <input type='checkbox' id='prefCity'     style='width:16px; height:16px;'>
+    New users in my city</label>
+  <label style='display:flex; align-items:center; gap:10px; color:#eee; cursor:pointer;'>
+    <input type='checkbox' id='prefEmail'    style='width:16px; height:16px;'>
+    Email notifications</label>
+</div>
+
+
       <p id="updMsg" class="msg" style="margin-top:12px"></p>
       <div class="modal-actions">
         <button class="cancel-btn" onclick="closeProfileModal()">Cancel</button>

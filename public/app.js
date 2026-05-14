@@ -893,6 +893,256 @@ async function saveNotifPreferences() {
   } catch { }
 }
 
+
+// ── Notifications ────────────────────────────────────────────────
+
+
+async function loadNotificationCount() {
+  const token = localStorage.getItem('artistToken');
+  if (!token) return;
+  try {
+    const res  = await fetch('/api/notifications/count', {
+      headers: { 'Authorization': token }
+    });
+    const data = await res.json();
+    const badge = document.getElementById('notifCount');
+    if (badge) {
+      badge.textContent = data.unread;
+      badge.style.display = data.unread > 0 ? 'flex' : 'none';
+    }
+  } catch { }
+}
+
+
+async function toggleNotifPanel() {
+  const panel = document.getElementById('notifPanel');
+  if (!panel) return;
+  if (panel.style.display === 'none') {
+    panel.style.display = 'block';
+    await loadNotifications();
+  } else {
+    panel.style.display = 'none';
+  }
+}
+
+
+async function loadNotifications() {
+  const token = localStorage.getItem('artistToken');
+  try {
+    const res  = await fetch('/api/notifications', {
+      headers: { 'Authorization': token }
+    });
+    const data = await res.json();
+    const list = document.getElementById('notifList');
+    if (!data.length) {
+      list.innerHTML = '<p style="padding:16px; color:#555; font-style:italic;">No notifications yet.</p>';
+      return;
+    }
+    list.innerHTML = data.map(n =>
+      '<div style="padding:12px 16px; border-bottom:1px solid #222;' +
+      ' background:' + (n.Is_Read ? '#111' : '#1a1a1a') + ';">' +
+      '<div style="color:' + (n.Is_Read ? '#666' : '#eee') + '; font-size:0.85rem;">' +
+      (n.Message || '') + '</div>' +
+      '<div style="color:#555; font-size:0.75rem; margin-top:4px;">' +
+      new Date(n.Created_At).toLocaleDateString() + '</div>' +
+      '</div>'
+    ).join('');
+    // Mark as read
+    await markAllRead();
+  } catch { }
+}
+
+
+async function markAllRead() {
+  const token = localStorage.getItem('artistToken');
+  try {
+    await fetch('/api/notifications/read', {
+      method: 'PUT', headers: { 'Authorization': token }
+    });
+    const badge = document.getElementById('notifCount');
+    if (badge) badge.style.display = 'none';
+  } catch { }
+}
+
+
+async function showLoginNotifPopup() {
+  const token = localStorage.getItem('artistToken');
+  if (!token) return;
+  try {
+    const res  = await fetch('/api/notifications/count', {
+      headers: { 'Authorization': token }
+    });
+    const data = await res.json();
+    if (data.unread > 0) {
+      const popup = document.createElement('div');
+      popup.style.cssText = 'position:fixed; bottom:24px; right:24px; z-index:9999;' +
+        'background:#1a1a1a; border:1px solid #B8860B; border-radius:12px;' +
+        'padding:16px 20px; max-width:300px; box-shadow:0 8px 32px rgba(0,0,0,0.8);';
+      popup.innerHTML = '<div style="color:#D4AF37; font-weight:bold; margin-bottom:6px;">&#128276; New Notifications</div>' +
+        '<div style="color:#aaa; font-size:0.85rem;">You have ' + data.unread + ' unread notification' +
+        (data.unread !== 1 ? 's' : '') + ' since your last visit.</div>' +
+        '<div style="display:flex; gap:8px; margin-top:12px;">' +
+        '<button onclick="toggleNotifPanel(); this.closest(\'div\').parentElement.remove()"' +
+        ' style="flex:1; padding:8px; background:#B8860B; color:#000; border:none;' +
+        ' border-radius:6px; cursor:pointer; font-weight:bold;">View</button>' +
+        '<button onclick="this.closest(\'div\').parentElement.remove()"' +
+        ' style="flex:1; padding:8px; background:transparent; color:#666;' +
+        ' border:1px solid #333; border-radius:6px; cursor:pointer;">Dismiss</button>' +
+        '</div>';
+      document.body.appendChild(popup);
+      setTimeout(() => { if (popup.parentElement) popup.remove(); }, 8000);
+    }
+  } catch { }
+}
+
+
+// Load notification preferences into modal
+async function loadNotifPreferences() {
+  const token = localStorage.getItem('artistToken');
+  try {
+    const res  = await fetch('/api/notifications/preferences', {
+      headers: { 'Authorization': token }
+    });
+    const data = await res.json();
+    const set  = (id, val) => { const el = document.getElementById(id); if (el) el.checked = val === 1; };
+    set('prefCollab',    data.Collab_Requests);
+    set('prefProfile',   data.Profile_Views);
+    set('prefMessages',  data.New_Messages);
+    set('prefFollowers', data.New_Followers);
+    set('prefCity',      data.New_Users_City);
+    set('prefEmail',     data.Email_Alerts);
+  } catch { }
+}
+
+
+async function saveNotifPreferences() {
+  const token = localStorage.getItem('artistToken');
+  const get   = id => { const el = document.getElementById(id); return el ? el.checked : false; };
+  await fetch('/api/notifications/preferences', {
+    method:  'PUT',
+    headers: { 'Authorization': token, 'Content-Type': 'application/json' },
+    body:    JSON.stringify({
+      collabRequests: get('prefCollab'),
+      profileViews:   get('prefProfile'),
+      newMessages:    get('prefMessages'),
+      newFollowers:   get('prefFollowers'),
+      newUsersCity:   get('prefCity'),
+      emailAlerts:    get('prefEmail')
+    })
+  });
+}
+
+
+// ── Messaging ────────────────────────────────────────────────────
+
+
+let activeConvId   = null;
+let activeRecvId   = null;
+let activeRecvName = null;
+
+
+async function loadConversations() {
+  const token = localStorage.getItem('artistToken');
+  if (!token) { window.location.href = 'index.html'; return; }
+  try {
+    const res  = await fetch('/api/messages/conversations', {
+      headers: { 'Authorization': token }
+    });
+    const data = await res.json();
+    const list = document.getElementById('convList');
+    if (!list) return;
+    if (!data.length) {
+      list.innerHTML = '<div style="padding:20px; color:#555; font-style:italic;">' +
+        'No conversations yet. Accept a collab request to start messaging.</div>';
+      return;
+    }
+    list.innerHTML = data.map(c => {
+      const initials = (c.Other_Name || 'U').charAt(0).toUpperCase();
+      return '<div class="conv-item" onclick="openConversation(' +
+        c.Other_ID + ',\'' + (c.Other_Name||'') + '\',\'' + c.Conversation_ID + '\')">' +
+        '<div class=conv-avatar>' + initials + '</div>' +
+        '<div style="flex:1; min-width:0;">' +
+        '<div class=conv-name>' + (c.Other_Name || 'Unknown') + '</div>' +
+        '</div>' +
+        (c.Unread_Count > 0 ?
+          '<span class=conv-unread>' + c.Unread_Count + '</span>' : '') +
+        '</div>';
+    }).join('');
+  } catch { }
+}
+
+
+async function openConversation(receiverId, receiverName, convId) {
+  activeConvId   = convId;
+  activeRecvId   = receiverId;
+  activeRecvName = receiverName;
+  const token    = localStorage.getItem('artistToken');
+  const myName   = localStorage.getItem('artistName');
+  const myId     = JSON.parse(atob(token.split('.')[1])).loginId;
+  document.querySelectorAll('.conv-item').forEach(el => el.classList.remove('active'));
+  const panel = document.getElementById('chatPanel');
+  panel.innerHTML =
+    '<div class=chat-header>' +
+    '<div class=conv-avatar>' + receiverName.charAt(0).toUpperCase() + '</div>' +
+    '<div style="color:#eee; font-weight:600;">' + receiverName + '</div>' +
+    '</div>' +
+    '<div class=chat-messages id=chatMessages></div>' +
+    '<div class=chat-input-row>' +
+    '<input class=chat-input id=msgInput placeholder="Type a message..."' +
+    ' onkeydown="if(event.key===\'Enter\') sendMessage()">' +
+    '<button class=gold-btn onclick=sendMessage()' +
+    ' style="padding:10px 20px;">Send</button>' +
+    '</div>';
+  try {
+    const res  = await fetch('/api/messages/' + convId, {
+      headers: { 'Authorization': token }
+    });
+    const msgs = await res.json();
+    const box  = document.getElementById('chatMessages');
+    if (!msgs.length) {
+      box.innerHTML = '<p style="color:#555; text-align:center; margin-top:40px;">No messages yet. Say hello!</p>';
+    } else {
+      box.innerHTML = msgs.map(m => {
+        const isMine = m.Sender_ID === myId;
+        return '<div style="display:flex; flex-direction:column;' +
+          ' align-items:' + (isMine ? 'flex-end' : 'flex-start') + ';">' +
+          '<div class="msg-bubble ' + (isMine ? 'msg-sent' : 'msg-received') + '">' +
+          m.Message_Text + '</div>' +
+          '<div class=msg-time>' + new Date(m.Sent_At).toLocaleTimeString() + '</div>' +
+          '</div>';
+      }).join('');
+      box.scrollTop = box.scrollHeight;
+    }
+    loadConversations();
+  } catch { }
+}
+
+
+async function sendMessage() {
+  if (!activeRecvId) return;
+  const token = localStorage.getItem('artistToken');
+  const input = document.getElementById('msgInput');
+  const text  = input.value.trim();
+  if (!text) return;
+  input.value = '';
+  try {
+    await fetch('/api/messages', {
+      method:  'POST',
+      headers: { 'Authorization': token, 'Content-Type': 'application/json' },
+      body:    JSON.stringify({ receiverId: activeRecvId, messageText: text })
+    });
+    openConversation(activeRecvId, activeRecvName, activeConvId);
+  } catch { }
+}
+
+
+// Auto load on messages page
+if (document.getElementById('convList')) loadConversations();
+
+
+
+
+
 // ── Auto-run when on dashboard page ─────────────────────────────
 if (document.getElementById("welcomeMsg")) loadDashboard();
 
