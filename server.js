@@ -77,8 +77,14 @@ async function createNotification(pool, recipientId, senderId, senderName,
       const p = prefs.recordset[0];
       const emailEnabled = !p || p.Email_Alerts === 1;
       if (emailEnabled) {
-        const subject = 'TAP Notification -- ' + senderName;
-        const html = `
+const subjects = {
+  'collab_request': senderName + ' sent you a collab request on TAP',
+  'new_message':    senderName + ' sent you a message on TAP',
+  'collab_accepted':'Your collab request was accepted by ' + senderName,
+  'collab_declined':'Your collab request was declined by ' + senderName,
+  'profile_view':   senderName + ' viewed your TAP profile'
+};
+const subject = subjects[type] || 'New notification from ' + senderName + ' on TAP';        const html = `
           <div style="font-family:Arial; max-width:500px; margin:0 auto;
             background:#111; color:#eee; padding:32px; border-radius:12px;">
             <h1 style="color:#D4AF37; margin-bottom:8px;">Tha Artist Portal</h1>
