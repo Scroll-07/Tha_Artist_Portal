@@ -1331,19 +1331,6 @@ app.post('/api/admin/cleanup', async (req, res) => {
 
 
 
-// TEMP -- test email route -- remove after testing
-app.get('/api/test-email', async (req, res) => {
-  try {
-    await sendEmail(
-      'badeeko93@gmail.com',
-      'TAP Email Test',
-      '<h1 style="color:#D4AF37">TAP Email is working!</h1><p>Your notifications are set up correctly.</p>'
-    );
-    res.json({ message: 'Test email sent! Check your inbox.' });
-  } catch (err) {
-    res.status(500).json({ message: 'Failed.', error: err.message });
-  }
-});
 
 
 app.listen(PORT, () => console.log("Server running on port " + PORT));
