@@ -1036,11 +1036,18 @@ async function saveNotifPreferences() {
 
 // ── Messaging ────────────────────────────────────────────────────
 
-
+// ── Messages Page ─────────────────────────────────────────────────
 let activeConvId   = null;
 let activeRecvId   = null;
 let activeRecvName = null;
 
+function switchMsgTab(tab) {
+  document.getElementById('tabConversations').classList.toggle('active', tab === 'conversations');
+  document.getElementById('tabRequests').classList.toggle('active', tab === 'requests');
+  document.getElementById('tabConvBtn').classList.toggle('active', tab === 'conversations');
+  document.getElementById('tabReqBtn').classList.toggle('active', tab === 'requests');
+  if (tab === 'requests') loadCollabRequestsForMessages();
+}
 
 async function loadConversations() {
   const token = localStorage.getItem('artistToken');
@@ -1053,46 +1060,119 @@ async function loadConversations() {
     const list = document.getElementById('convList');
     if (!list) return;
     if (!data.length) {
-      list.innerHTML = '<div style="padding:20px; color:#555; font-style:italic;">' +
-        'No conversations yet. Accept a collab request to start messaging.</div>';
+      list.innerHTML = '<div class="empty-sidebar">No conversations yet.<br>Accept a collab request to start messaging.</div>';
       return;
     }
+    const unread = data.reduce((sum, c) => sum + (c.Unread_Count || 0), 0);
+    const badge  = document.getElementById('convBadge');
+    if (badge) { badge.textContent = unread; badge.style.display = unread > 0 ? 'inline-flex' : 'none'; }
     list.innerHTML = data.map(c => {
       const initials = (c.Other_Name || 'U').charAt(0).toUpperCase();
       return '<div class="conv-item" onclick="openConversation(' +
-        c.Other_ID + ',\'' + (c.Other_Name||'') + '\',\'' + c.Conversation_ID + '\')">' +
-        '<div class=conv-avatar>' + initials + '</div>' +
+        c.Other_ID + ',\'' + (c.Other_Name||'').replace(/'/g,"\\'") + '\',\'' + c.Conversation_ID + '\')">' +
+        '<div class="conv-avatar">' + initials + '</div>' +
         '<div style="flex:1; min-width:0;">' +
-        '<div class=conv-name>' + (c.Other_Name || 'Unknown') + '</div>' +
+        '<div class="conv-name">' + (c.Other_Name || 'Unknown') + '</div>' +
+        '<div style="color:#555; font-size:0.75rem;">' +
+        new Date(c.Last_Message_At).toLocaleDateString() + '</div>' +
         '</div>' +
         (c.Unread_Count > 0 ?
-          '<span class=conv-unread>' + c.Unread_Count + '</span>' : '') +
+          '<span class="conv-unread">' + c.Unread_Count + '</span>' : '') +
         '</div>';
     }).join('');
-  } catch { }
+  } catch (err) { console.error('loadConversations error:', err); }
 }
 
+async function loadCollabRequestsForMessages() {
+  const token = localStorage.getItem('artistToken');
+  try {
+    const res  = await fetch('/api/collab-requests', {
+      headers: { 'Authorization': token }
+    });
+    const data = await res.json();
+    const list = document.getElementById('reqList');
+    if (!list) return;
+    const received = data.received || [];
+    const sent     = data.sent     || [];
+    const pending  = received.filter(r => r.Status === 'Pending');
+    const badge    = document.getElementById('reqBadge');
+    if (badge) { badge.textContent = pending.length; badge.style.display = pending.length > 0 ? 'inline-flex' : 'none'; }
+    if (!received.length && !sent.length) {
+      list.innerHTML = '<div class="empty-sidebar">No collab requests yet.</div>';
+      return;
+    }
+    let html = '';
+    if (received.length) {
+      html += '<div style="padding:10px 16px; color:#666; font-size:0.75rem; text-transform:uppercase; letter-spacing:1px;">Received</div>';
+      html += received.map(r => {
+        const color = r.Status === 'Accepted' ? '#2E7D32' : r.Status === 'Declined' ? '#B71C1C' : '#B8860B';
+        const bg    = r.Status === 'Accepted' ? '#1B5E2033' : r.Status === 'Declined' ? '#B71C1C33' : '#7B590033';
+        return '<div class="req-card" style="border-left:3px solid ' + color + ';">' +
+          '<div class="req-name">' + r.Sender_Name + '</div>' +
+          '<div class="req-role">' + (r.Sender_Role || '') + ' &bull; ' + (r.Sender_TAP_ID || '') + '</div>' +
+          '<div class="req-msg">' + (r.Message || '') + '</div>' +
+          '<div style="display:flex; justify-content:space-between; align-items:center;">' +
+          '<span class="req-status" style="background:' + bg + '; color:' + color + ';">' + r.Status + '</span>' +
+          '<span style="color:#555; font-size:0.72rem;">' + new Date(r.Sent_At).toLocaleDateString() + '</span>' +
+          '</div>' +
+          (r.Status === 'Pending' ?
+            '<div class="req-btns">' +
+            '<button onclick="respondMsgCollab(' + r.Request_ID + ',\'Accepted\')" style="background:#1B5E20; color:#fff;">Accept</button>' +
+            '<button onclick="respondMsgCollab(' + r.Request_ID + ',\'Declined\')" style="background:#B71C1C; color:#fff;">Decline</button>' +
+            '</div>' : '') +
+          '</div>';
+      }).join('');
+    }
+    if (sent.length) {
+      html += '<div style="padding:10px 16px; color:#666; font-size:0.75rem; text-transform:uppercase; letter-spacing:1px; margin-top:8px;">Sent</div>';
+      html += sent.map(r => {
+        const color = r.Status === 'Accepted' ? '#2E7D32' : r.Status === 'Declined' ? '#B71C1C' : '#B8860B';
+        const bg    = r.Status === 'Accepted' ? '#1B5E2033' : r.Status === 'Declined' ? '#B71C1C33' : '#7B590033';
+        return '<div class="req-card">' +
+          '<div class="req-name">To: ' + r.Receiver_Name + '</div>' +
+          '<div class="req-role">' + (r.Receiver_Role || '') + '</div>' +
+          '<div class="req-msg">' + (r.Message || '') + '</div>' +
+          '<div style="display:flex; justify-content:space-between; align-items:center;">' +
+          '<span class="req-status" style="background:' + bg + '; color:' + color + ';">' + r.Status + '</span>' +
+          '<span style="color:#555; font-size:0.72rem;">' + new Date(r.Sent_At).toLocaleDateString() + '</span>' +
+          '</div></div>';
+      }).join('');
+    }
+    list.innerHTML = html;
+  } catch (err) { console.error('loadCollabRequestsForMessages error:', err); }
+}
+
+async function respondMsgCollab(requestId, status) {
+  const token = localStorage.getItem('artistToken');
+  const res   = await fetch('/api/collab-request/' + requestId, {
+    method:  'PUT',
+    headers: { 'Authorization': token, 'Content-Type': 'application/json' },
+    body:    JSON.stringify({ status })
+  });
+  const data = await res.json();
+  alert(data.message);
+  loadCollabRequestsForMessages();
+  if (status === 'Accepted') loadConversations();
+}
 
 async function openConversation(receiverId, receiverName, convId) {
   activeConvId   = convId;
   activeRecvId   = receiverId;
   activeRecvName = receiverName;
-  const token    = localStorage.getItem('artistToken');
-  const myName   = localStorage.getItem('artistName');
-  const myId     = JSON.parse(atob(token.split('.')[1])).loginId;
+  const token  = localStorage.getItem('artistToken');
+  const myId   = JSON.parse(atob(token.split('.')[1])).loginId;
   document.querySelectorAll('.conv-item').forEach(el => el.classList.remove('active'));
-  const panel = document.getElementById('chatPanel');
+  const panel  = document.getElementById('chatPanel');
   panel.innerHTML =
-    '<div class=chat-header>' +
-    '<div class=conv-avatar>' + receiverName.charAt(0).toUpperCase() + '</div>' +
+    '<div class="chat-header">' +
+    '<div class="conv-avatar">' + receiverName.charAt(0).toUpperCase() + '</div>' +
     '<div style="color:#eee; font-weight:600;">' + receiverName + '</div>' +
     '</div>' +
-    '<div class=chat-messages id=chatMessages></div>' +
-    '<div class=chat-input-row>' +
-    '<input class=chat-input id=msgInput placeholder="Type a message..."' +
+    '<div class="chat-messages" id="chatMessages"></div>' +
+    '<div class="chat-input-row">' +
+    '<input class="chat-input" id="msgInput" placeholder="Type a message..."' +
     ' onkeydown="if(event.key===\'Enter\') sendMessage()">' +
-    '<button class=gold-btn onclick=sendMessage()' +
-    ' style="padding:10px 20px;">Send</button>' +
+    '<button class="gold-btn" onclick="sendMessage()" style="padding:10px 20px;">Send</button>' +
     '</div>';
   try {
     const res  = await fetch('/api/messages/' + convId, {
@@ -1105,19 +1185,16 @@ async function openConversation(receiverId, receiverName, convId) {
     } else {
       box.innerHTML = msgs.map(m => {
         const isMine = m.Sender_ID === myId;
-        return '<div style="display:flex; flex-direction:column;' +
-          ' align-items:' + (isMine ? 'flex-end' : 'flex-start') + ';">' +
-          '<div class="msg-bubble ' + (isMine ? 'msg-sent' : 'msg-received') + '">' +
-          m.Message_Text + '</div>' +
-          '<div class=msg-time>' + new Date(m.Sent_At).toLocaleTimeString() + '</div>' +
+        return '<div style="display:flex; flex-direction:column; align-items:' + (isMine ? 'flex-end' : 'flex-start') + ';">' +
+          '<div class="msg-bubble ' + (isMine ? 'msg-sent' : 'msg-received') + '">' + m.Message_Text + '</div>' +
+          '<div class="msg-time">' + new Date(m.Sent_At).toLocaleTimeString() + '</div>' +
           '</div>';
       }).join('');
       box.scrollTop = box.scrollHeight;
     }
     loadConversations();
-  } catch { }
+  } catch (err) { console.error('openConversation error:', err); }
 }
-
 
 async function sendMessage() {
   if (!activeRecvId) return;
@@ -1133,14 +1210,14 @@ async function sendMessage() {
       body:    JSON.stringify({ receiverId: activeRecvId, messageText: text })
     });
     openConversation(activeRecvId, activeRecvName, activeConvId);
-  } catch { }
+  } catch (err) { console.error('sendMessage error:', err); }
 }
 
-
 // Auto load on messages page
-if (document.getElementById('convList')) loadConversations();
-
-
+if (document.getElementById('convList')) {
+  loadConversations();
+  loadCollabRequestsForMessages();
+}
 
 // ── Auto-run when on dashboard page ─────────────────────────────
 if (document.getElementById("welcomeMsg")) loadDashboard();
