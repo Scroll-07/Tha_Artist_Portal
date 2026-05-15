@@ -165,26 +165,27 @@ app.post('/api/register', async (req, res) => {
 
 
     // Insert into staging with role info
-    await pool.request()
-      .input('Name',      sql.NVarChar, name)
-      .input('Email',     sql.NVarChar, email)
-      .input('Hash',      sql.NVarChar, hash)
-      .input('Phone',     sql.NVarChar, phone     || null)
-      .input('City',      sql.NVarChar, city      || null)
-      .input('State',     sql.NVarChar, state     || null)
-      .input('Genre',     sql.NVarChar, genre     || null)
-      .input('Instagram', sql.NVarChar, instagram || null)
-      .input('TikTok',    sql.NVarChar, tiktok    || null)
-      .input('Spotify',   sql.NVarChar, spotify   || null)
-      .input('Apple',     sql.NVarChar, apple     || null)
-      .input('YouTube',   sql.NVarChar, youtube   || null)
-      .query(`INSERT INTO Artist_Registration_Staging
-        (Artist_Name, Artist_Email, Password_Hash,
-         Artist_Phone, Artist_City, Artist_State, Genre_Name,
-         Instagram_URL, TikTok_URL, Spotify_URL, Apple_URL, YouTube_URL)
-        VALUES (@Name, @Email, @Hash,
-         @Phone, @City, @State, @Genre,
-         @Instagram, @TikTok, @Spotify, @Apple, @YouTube)`);
+await pool.request()
+  .input('Name',      sql.NVarChar, name)
+  .input('Email',     sql.NVarChar, email)
+  .input('Hash',      sql.NVarChar, hash)
+  .input('Role',      sql.NVarChar, role      || 'Artist')
+  .input('Phone',     sql.NVarChar, phone     || null)
+  .input('City',      sql.NVarChar, city      || null)
+  .input('State',     sql.NVarChar, state     || null)
+  .input('Genre',     sql.NVarChar, genre     || null)
+  .input('Instagram', sql.NVarChar, instagram || null)
+  .input('TikTok',    sql.NVarChar, tiktok    || null)
+  .input('Spotify',   sql.NVarChar, spotify   || null)
+  .input('Apple',     sql.NVarChar, apple     || null)
+  .input('YouTube',   sql.NVarChar, youtube   || null)
+  .query(`INSERT INTO Artist_Registration_Staging
+    (Artist_Name, Artist_Email, Password_Hash, Role,
+     Artist_Phone, Artist_City, Artist_State, Genre_Name,
+     Instagram_URL, TikTok_URL, Spotify_URL, Apple_URL, YouTube_URL)
+    VALUES (@Name, @Email, @Hash, @Role,
+     @Phone, @City, @State, @Genre,
+     @Instagram, @TikTok, @Spotify, @Apple, @YouTube)`);
 
 
     // Store role details in session for approval processing
