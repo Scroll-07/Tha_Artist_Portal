@@ -59,9 +59,10 @@
       </div>
       <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
         <button class="update-profile-btn" onclick="switchAdminTab('pending')">Registrations</button>
-        <button class="update-profile-btn" onclick="switchAdminTab('data')">Data Entry</button>
         <button class="update-profile-btn" onclick="switchAdminTab('users')">All Users</button>
+        <button class="update-profile-btn" onclick="switchAdminTab('data')">Data Entry</button>
         <button class="update-profile-btn" onclick="switchAdminTab('collabs')">Collabs</button>
+        <button class="update-profile-btn" onclick="runCleanup()"style="background:#1B5E20; color:#fff;"> Run Data Cleanup</button>
         <button class="logout-btn" onclick="adminLogout()">Logout</button>
       </div>
     </div>

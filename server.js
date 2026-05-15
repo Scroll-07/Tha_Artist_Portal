@@ -102,7 +102,70 @@ async function createNotification(pool, recipientId, senderId, senderName,
   }
 }
 
+// ── Nightly data cleanup ─────────────────────────────────────────
+async function runNightlyCleanup() {
+  try {
+    const pool = await getPool();
+    console.log('Running nightly TAP data cleanup...');
 
+    // Fix NULL roles in ArtistLogins
+    await pool.request().query(
+      "UPDATE ArtistLogins SET Role = 'Artist' WHERE Role IS NULL OR Role = ''"
+    );
+
+    // Fix NULL roles in staging
+    await pool.request().query(
+      "UPDATE Artist_Registration_Staging SET Role = 'Artist' WHERE Role IS NULL OR Role = ''"
+    );
+
+    // Link missing Artist_IDs
+    await pool.request().query(`
+      UPDATE l SET l.Artist_ID = a.Artist_ID
+      FROM ArtistLogins l
+      JOIN Artists a ON l.Artist_Email = a.Artist_Email
+      WHERE l.Artist_ID IS NULL
+    `);
+
+    // Sync names and emails between tables
+    await pool.request().query(`
+      UPDATE a
+      SET a.Artist_Name  = l.Artist_Name,
+          a.Artist_Email = l.Artist_Email
+      FROM Artists a
+      JOIN ArtistLogins l ON a.Artist_ID = l.Artist_ID
+      WHERE a.Artist_Name  != l.Artist_Name
+      OR    a.Artist_Email != l.Artist_Email
+    `);
+
+    // Archive old staging records
+    await pool.request().query(`
+      UPDATE Artist_Registration_Staging
+      SET Status = 'Archived'
+      WHERE Status IN ('Rejected','Approved')
+      AND Submitted_At < DATEADD(DAY, -90, GETDATE())
+    `);
+
+    console.log('Nightly cleanup completed successfully!');
+  } catch (err) {
+    console.error('Nightly cleanup error:', err.message);
+  }
+}
+
+// Schedule cleanup to run every night at 2am
+function scheduleMidnightCleanup() {
+  const now       = new Date();
+  const night     = new Date();
+  night.setHours(2, 0, 0, 0);
+  if (night <= now) night.setDate(night.getDate() + 1);
+  const msUntil2am = night - now;
+  setTimeout(() => {
+    runNightlyCleanup();
+    setInterval(runNightlyCleanup, 24 * 60 * 60 * 1000);
+  }, msUntil2am);
+  console.log('Nightly cleanup scheduled for 2am');
+}
+
+scheduleMidnightCleanup();
 
 // Middleware to verify login token
 function authMiddleware(req, res, next) {
@@ -1249,5 +1312,19 @@ app.post('/api/messages', authMiddleware, async (req, res) => {
   } catch (err) { res.status(500).json({ message: 'Error sending message.', error: err.message }); }
 });
 
+
+
+// ADMIN -- trigger data cleanup manually
+app.post('/api/admin/cleanup', async (req, res) => {
+  const adminKey = req.headers['x-admin-key'];
+  if (adminKey !== process.env.JWT_SECRET)
+    return res.status(403).json({ message: 'Not authorized.' });
+  try {
+    await runNightlyCleanup();
+    res.json({ message: 'Data cleanup completed successfully!' });
+  } catch (err) {
+    res.status(500).json({ message: 'Cleanup failed.', error: err.message });
+  }
+});
 
 app.listen(PORT, () => console.log("Server running on port " + PORT));
