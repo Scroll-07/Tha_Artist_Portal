@@ -1048,25 +1048,36 @@ function switchMsgTab(tab) {
   document.getElementById('tabReqBtn').classList.toggle('active', tab === 'requests');
   if (tab === 'requests') loadCollabRequestsForMessages();
 }
-
 async function loadConversations() {
   const token = localStorage.getItem('artistToken');
   if (!token) { window.location.href = 'index.html'; return; }
   try {
-    const res  = await fetch('/api/messages/conversations', {
-      headers: { 'Authorization': token }
-    });
-    const data = await res.json();
+    // Load both active conversations and accepted connections
+    const [convRes, connRes] = await Promise.all([
+      fetch('/api/messages/conversations', { headers: { 'Authorization': token } }),
+      fetch('/api/connections',            { headers: { 'Authorization': token } })
+    ]);
+    const conversations = await convRes.json();
+    const connections   = await connRes.json();
     const list = document.getElementById('convList');
     if (!list) return;
-    if (!data.length) {
+
+    // Find connections that do not have a conversation yet
+    const existingIds = conversations.map(c => c.Other_ID);
+    const newConns    = connections.filter(c => !existingIds.includes(c.Other_Login_ID));
+
+    if (!conversations.length && !newConns.length) {
       list.innerHTML = '<div class="empty-sidebar">No conversations yet.<br>Accept a collab request to start messaging.</div>';
       return;
     }
-    const unread = data.reduce((sum, c) => sum + (c.Unread_Count || 0), 0);
+
+    // Update unread badge
+    const unread = conversations.reduce((sum, c) => sum + (c.Unread_Count || 0), 0);
     const badge  = document.getElementById('convBadge');
     if (badge) { badge.textContent = unread; badge.style.display = unread > 0 ? 'inline-flex' : 'none'; }
-    list.innerHTML = data.map(c => {
+
+    // Render active conversations first
+    const convHtml = conversations.map(c => {
       const initials = (c.Other_Name || 'U').charAt(0).toUpperCase();
       return '<div class="conv-item" onclick="openConversation(' +
         c.Other_ID + ',\'' + (c.Other_Name||'').replace(/'/g,"\\'") + '\',\'' + c.Conversation_ID + '\')">' +
@@ -1076,10 +1087,27 @@ async function loadConversations() {
         '<div style="color:#555; font-size:0.75rem;">' +
         new Date(c.Last_Message_At).toLocaleDateString() + '</div>' +
         '</div>' +
-        (c.Unread_Count > 0 ?
-          '<span class="conv-unread">' + c.Unread_Count + '</span>' : '') +
+        (c.Unread_Count > 0 ? '<span class="conv-unread">' + c.Unread_Count + '</span>' : '') +
         '</div>';
     }).join('');
+
+    // Render new connections with no messages yet
+    const newHtml = newConns.length ?
+      '<div style="padding:8px 16px; color:#555; font-size:0.72rem; text-transform:uppercase; letter-spacing:1px; border-top:1px solid #1a1a1a;">New Connections</div>' +
+      newConns.map(c => {
+        const initials = (c.Other_Name || 'U').charAt(0).toUpperCase();
+        const convId   = [JSON.parse(atob(token.split('.')[1])).loginId, c.Other_Login_ID].sort((a,b)=>a-b).join('-');
+        return '<div class="conv-item" onclick="openConversation(' +
+          c.Other_Login_ID + ',\'' + (c.Other_Name||'').replace(/'/g,"\\'") + '\',\'' + convId + '\')">' +
+          '<div class="conv-avatar" style="background:linear-gradient(135deg,#1565C0,#42A5F5);">' + initials + '</div>' +
+          '<div style="flex:1; min-width:0;">' +
+          '<div class="conv-name">' + (c.Other_Name || 'Unknown') + '</div>' +
+          '<div style="color:#1565C0; font-size:0.72rem;">New connection -- say hello!</div>' +
+          '</div>' +
+          '</div>';
+      }).join('') : '';
+
+    list.innerHTML = convHtml + newHtml;
   } catch (err) { console.error('loadConversations error:', err); }
 }
 
