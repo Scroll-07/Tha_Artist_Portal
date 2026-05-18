@@ -1247,6 +1247,134 @@ if (document.getElementById('convList')) {
   loadCollabRequestsForMessages();
 }
 
+// ── New Message Modal ────────────────────────────────────────────
+let newMsgReceiverId   = null;
+let newMsgReceiverName = null;
+
+async function openNewMessageModal() {
+  document.getElementById('newMsgModal').style.display = 'block';
+  document.getElementById('newMsgForm').style.display  = 'none';
+  document.getElementById('newMsgText').value          = '';
+  document.getElementById('newMsgStatus').textContent  = '';
+  newMsgReceiverId   = null;
+  newMsgReceiverName = null;
+
+  const token = localStorage.getItem('artistToken');
+  try {
+    const res  = await fetch('/api/connections', {
+      headers: { 'Authorization': token }
+    });
+    const data = await res.json();
+    const list = document.getElementById('connectionsList');
+
+    if (!data.length) {
+      list.innerHTML = '<p style="color:#555; font-style:italic; text-align:center; padding:20px;">No accepted connections yet.<br>Accept a collab request to start messaging.</p>';
+      return;
+    }
+
+    list.innerHTML = data.map(c => {
+      const initials = (c.Other_Name || 'U').charAt(0).toUpperCase();
+      const roleColor = {
+        'Artist':'#B8860B','Manager':'#1565C0','Producer':'#6A1B9A',
+        'Engineer':'#2E7D32','Record Label':'#C62828','Painter':'#E65100',
+        'Photographer':'#00695C','Filmmaker':'#283593','Dancer':'#00838F',
+        'Fashion Designer':'#880E4F','Other':'#424242'
+      }[c.Other_Role] || '#B8860B';
+
+      return '<div onclick="selectRecipient(' + c.Other_Login_ID + ',\'' +
+        (c.Other_Name||'').replace(/'/g,"\\'") + '\')"' +
+        ' style="display:flex; align-items:center; gap:12px; padding:12px;' +
+        ' border-radius:8px; cursor:pointer; transition:background 0.15s;' +
+        ' margin-bottom:4px;"' +
+        ' onmouseover="this.style.background=\'#222\'"' +
+        ' onmouseout="this.style.background=\'transparent\'">' +
+        '<div style="width:40px; height:40px; border-radius:50%;' +
+        ' background:' + roleColor + '44; border:2px solid ' + roleColor + ';' +
+        ' display:flex; align-items:center; justify-content:center;' +
+        ' color:' + roleColor + '; font-weight:bold; font-size:0.9rem; flex-shrink:0;">' +
+        initials + '</div>' +
+        '<div>' +
+        '<div style="color:#eee; font-weight:500;">' + (c.Other_Name || 'Unknown') + '</div>' +
+        '<div style="color:#666; font-size:0.78rem;">' + (c.Other_Role || '') +
+        (c.Other_TAP_ID ? ' &bull; ' + c.Other_TAP_ID : '') + '</div>' +
+        '</div>' +
+        '<div style="margin-left:auto; color:#444; font-size:0.8rem;">&#8594;</div>' +
+        '</div>';
+    }).join('');
+  } catch {
+    document.getElementById('connectionsList').innerHTML =
+      '<p style="color:#f44336; text-align:center;">Could not load connections.</p>';
+  }
+}
+
+function selectRecipient(id, name) {
+  newMsgReceiverId   = id;
+  newMsgReceiverName = name;
+  document.getElementById('newMsgRecipient').textContent = name;
+  document.getElementById('connectionsList').style.display = 'none';
+  document.getElementById('newMsgForm').style.display      = 'block';
+  document.getElementById('newMsgText').focus();
+}
+
+function clearRecipient() {
+  newMsgReceiverId   = null;
+  newMsgReceiverName = null;
+  document.getElementById('connectionsList').style.display = 'block';
+  document.getElementById('newMsgForm').style.display      = 'none';
+  document.getElementById('newMsgText').value              = '';
+  document.getElementById('newMsgStatus').textContent      = '';
+}
+
+function closeNewMessageModal() {
+  document.getElementById('newMsgModal').style.display = 'none';
+}
+
+async function sendNewMessage() {
+  if (!newMsgReceiverId) return;
+  const token = localStorage.getItem('artistToken');
+  const text  = document.getElementById('newMsgText').value.trim();
+  const status = document.getElementById('newMsgStatus');
+
+  if (!text) {
+    status.style.color   = '#f44336';
+    status.textContent   = 'Please write a message before sending.';
+    return;
+  }
+
+  try {
+    const res  = await fetch('/api/messages', {
+      method:  'POST',
+      headers: { 'Authorization': token, 'Content-Type': 'application/json' },
+      body:    JSON.stringify({ receiverId: newMsgReceiverId, messageText: text })
+    });
+    const data = await res.json();
+
+    if (res.ok) {
+      status.style.color = '#4CAF50';
+      status.textContent = 'Message sent to ' + newMsgReceiverName + '!';
+      document.getElementById('newMsgText').value = '';
+      setTimeout(() => {
+        closeNewMessageModal();
+        window.location.href = 'messages.html';
+      }, 1500);
+    } else {
+      status.style.color = '#f44336';
+      status.textContent = data.message;
+    }
+  } catch {
+    status.style.color = '#f44336';
+    status.textContent = 'Something went wrong. Try again.';
+  }
+}
+
+// Close modal when clicking outside
+document.addEventListener('click', e => {
+  const modal = document.getElementById('newMsgModal');
+  if (modal && e.target === modal) closeNewMessageModal();
+});
+
+
+
 // ── Auto-run when on dashboard page ─────────────────────────────
 if (document.getElementById("welcomeMsg")) loadDashboard();
 

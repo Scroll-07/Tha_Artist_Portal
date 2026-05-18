@@ -1384,7 +1384,36 @@ app.get('/api/connections', authMiddleware, async (req, res) => {
   }
 });
 
-
+// GET accepted connections for messaging
+app.get('/api/connections', authMiddleware, async (req, res) => {
+  try {
+    const pool   = await getPool();
+    const result = await pool.request()
+      .input('MyID', sql.Int, req.artist.loginId)
+      .query(`
+        SELECT DISTINCT
+          CASE WHEN cr.Sender_Login_ID = @MyID
+               THEN cr.Receiver_Login_ID
+               ELSE cr.Sender_Login_ID END AS Other_Login_ID,
+          CASE WHEN cr.Sender_Login_ID = @MyID
+               THEN cr.Receiver_Name
+               ELSE cr.Sender_Name END AS Other_Name,
+          CASE WHEN cr.Sender_Login_ID = @MyID
+               THEN cr.Receiver_Role
+               ELSE cr.Sender_Role END AS Other_Role,
+          CASE WHEN cr.Sender_Login_ID = @MyID
+               THEN cr.Receiver_TAP_ID
+               ELSE cr.Sender_TAP_ID END AS Other_TAP_ID
+        FROM Collab_Requests cr
+        WHERE cr.Status = 'Accepted'
+        AND (cr.Sender_Login_ID = @MyID OR cr.Receiver_Login_ID = @MyID)
+        ORDER BY Other_Name ASC
+      `);
+    res.json(result.recordset);
+  } catch (err) {
+    res.status(500).json({ message: 'Error.', error: err.message });
+  }
+});
 
 
 app.listen(PORT, () => console.log("Server running on port " + PORT));
