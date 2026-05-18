@@ -970,6 +970,24 @@ app.post('/api/collab-request', authMiddleware, async (req, res) => {
         (@SenderID, @SenderName, @SenderTAP, @SenderRole, @SenderEmail,
          @ReceiverID, @ReceiverName, @ReceiverTAP, @ReceiverRole, @Message)`);
 
+// Get receiver email for notification
+    const receiverEmail2 = await pool.request()
+      .input('RID2', sql.Int, receiverLoginId)
+      .query('SELECT Artist_Email FROM ArtistLogins WHERE Login_ID = @RID2');
+    const recEmail = receiverEmail2.recordset[0]?.Artist_Email;
+
+    await createNotification(
+      pool,
+      receiverLoginId,
+      req.artist.loginId,
+      req.artist.name,
+      'collab_request',
+      req.artist.name + ' sent you a collab request: ' + (message || ''),
+      '/dashboard.html',
+      recEmail
+    );
+
+
 
     res.json({ message: 'Collab request sent to ' + rec.Artist_Name + '!' });
   } catch (err) {
