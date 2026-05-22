@@ -761,138 +761,6 @@ async function respondToCollab(requestId, status) {
   loadCollabRequests();
 }
 
-// ── Notifications ─────────────────────────────────────────────────
-async function loadNotificationCount() {
-  const token = localStorage.getItem('artistToken');
-  if (!token) return;
-  try {
-    const res  = await fetch('/api/notifications/count', {
-      headers: { 'Authorization': token }
-    });
-    const data = await res.json();
-    const badge = document.getElementById('notifCount');
-    if (badge) {
-      badge.textContent = data.unread;
-      badge.style.display = data.unread > 0 ? 'flex' : 'none';
-    }
-  } catch { }
-}
-
-async function toggleNotifPanel() {
-  const panel = document.getElementById('notifPanel');
-  if (!panel) return;
-  if (panel.style.display === 'none') {
-    panel.style.display = 'block';
-    await loadNotifications();
-  } else {
-    panel.style.display = 'none';
-  }
-}
-
-async function loadNotifications() {
-  const token = localStorage.getItem('artistToken');
-  try {
-    const res  = await fetch('/api/notifications', {
-      headers: { 'Authorization': token }
-    });
-    const data = await res.json();
-    const list = document.getElementById('notifList');
-    if (!list) return;
-    if (!data.length) {
-      list.innerHTML = '<p style="padding:16px; color:#555; font-style:italic;">No notifications yet.</p>';
-      return;
-    }
-    list.innerHTML = data.map(n =>
-      '<div style="padding:12px 16px; border-bottom:1px solid #222;' +
-      ' background:' + (n.Is_Read ? '#111' : '#1a1a1a') + ';">' +
-      '<div style="color:' + (n.Is_Read ? '#666' : '#eee') + '; font-size:0.85rem;">' +
-      (n.Message || '') + '</div>' +
-      '<div style="color:#555; font-size:0.75rem; margin-top:4px;">' +
-      new Date(n.Created_At).toLocaleDateString() + '</div>' +
-      '</div>'
-    ).join('');
-    await markAllRead();
-  } catch { }
-}
-
-async function markAllRead() {
-  const token = localStorage.getItem('artistToken');
-  try {
-    await fetch('/api/notifications/read', {
-      method: 'PUT', headers: { 'Authorization': token }
-    });
-    const badge = document.getElementById('notifCount');
-    if (badge) badge.style.display = 'none';
-  } catch { }
-}
-
-async function showLoginNotifPopup() {
-  const token = localStorage.getItem('artistToken');
-  if (!token) return;
-  try {
-    const res  = await fetch('/api/notifications/count', {
-      headers: { 'Authorization': token }
-    });
-    const data = await res.json();
-    if (data.unread > 0) {
-      const popup = document.createElement('div');
-      popup.style.cssText = 'position:fixed; bottom:24px; right:24px; z-index:9999;' +
-        'background:#1a1a1a; border:1px solid #B8860B; border-radius:12px;' +
-        'padding:16px 20px; max-width:300px; box-shadow:0 8px 32px rgba(0,0,0,0.8);';
-      popup.innerHTML =
-        '<div style="color:#D4AF37; font-weight:bold; margin-bottom:6px;">&#128276; New Notifications</div>' +
-        '<div style="color:#aaa; font-size:0.85rem;">You have ' + data.unread + ' unread notification' +
-        (data.unread !== 1 ? 's' : '') + ' since your last visit.</div>' +
-        '<div style="display:flex; gap:8px; margin-top:12px;">' +
-        '<button onclick="toggleNotifPanel(); this.closest(\'div\').parentElement.remove()"' +
-        ' style="flex:1; padding:8px; background:#B8860B; color:#000; border:none;' +
-        ' border-radius:6px; cursor:pointer; font-weight:bold;">View</button>' +
-        '<button onclick="this.closest(\'div\').parentElement.remove()"' +
-        ' style="flex:1; padding:8px; background:transparent; color:#666;' +
-        ' border:1px solid #333; border-radius:6px; cursor:pointer;">Dismiss</button>' +
-        '</div>';
-      document.body.appendChild(popup);
-      setTimeout(() => { if (popup.parentElement) popup.remove(); }, 8000);
-    }
-  } catch { }
-}
-
-async function loadNotifPreferences() {
-  const token = localStorage.getItem('artistToken');
-  try {
-    const res  = await fetch('/api/notifications/preferences', {
-      headers: { 'Authorization': token }
-    });
-    const data = await res.json();
-    const set  = (id, val) => { const el = document.getElementById(id); if (el) el.checked = val === 1; };
-    set('prefCollab',    data.Collab_Requests);
-    set('prefProfile',   data.Profile_Views);
-    set('prefMessages',  data.New_Messages);
-    set('prefFollowers', data.New_Followers);
-    set('prefCity',      data.New_Users_City);
-    set('prefEmail',     data.Email_Alerts);
-  } catch { }
-}
-
-async function saveNotifPreferences() {
-  const token = localStorage.getItem('artistToken');
-  const get   = id => { const el = document.getElementById(id); return el ? el.checked : false; };
-  try {
-    await fetch('/api/notifications/preferences', {
-      method:  'PUT',
-      headers: { 'Authorization': token, 'Content-Type': 'application/json' },
-      body:    JSON.stringify({
-        collabRequests: get('prefCollab'),
-        profileViews:   get('prefProfile'),
-        newMessages:    get('prefMessages'),
-        newFollowers:   get('prefFollowers'),
-        newUsersCity:   get('prefCity'),
-        emailAlerts:    get('prefEmail')
-      })
-    });
-  } catch { }
-}
-
 
 // ── Notifications ────────────────────────────────────────────────
 
@@ -1198,9 +1066,9 @@ async function openConversation(receiverId, receiverName, convId) {
     '</div>' +
     '<div class="chat-messages" id="chatMessages"></div>' +
     '<div class="chat-input-row">' +
-    '<input class="chat-input" id="msgInput" placeholder="Type a message..."' +
-    ' onkeydown="if(event.key===\'Enter\') sendMessage()">' +
-    '<button class="gold-btn" onclick="sendMessage()" style="padding:10px 20px;">Send</button>' +
+    '<textarea class="chat-input" id="msgInput" placeholder="Type a message..."' +
+    ' onkeydown="if(event.key===\'Enter\' && !event.shiftKey){ event.preventDefault(); sendMessage(); }" rows="1"></textarea>' +
+    '<button class="chat-send-btn" onclick="sendMessage()">Send</button>' +
     '</div>';
   try {
     const res  = await fetch('/api/messages/' + convId, {
