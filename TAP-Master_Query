@@ -1,0 +1,207 @@
+-- ═══════════════════════════════════════════════════════════
+-- TAP MASTER USER QUERY
+-- Shows ALL users across every role on the platform
+-- Bolaji B Adeeko LLC | Musik_DB_2026
+-- ═══════════════════════════════════════════════════════════
+
+SELECT
+    -- ── Identity ──────────────────────────────────────────
+    al.TAP_ID,
+    al.Role,
+    al.Artist_Name                                          AS Full_Name,
+    al.Artist_Email                                         AS Email,
+    al.Created_Date                                         AS Member_Since,
+
+    -- ── Location ──────────────────────────────────────────
+    COALESCE(
+        a.Artist_City,
+        p.Producer_City,
+        e.Engineer_City,
+        c.Creative_City,
+        m.Manager_City
+    )                                                       AS City,
+    COALESCE(
+        a.Artist_State,
+        p.Producer_State,
+        e.Engineer_State,
+        c.Creative_State,
+        m.Manager_State
+    )                                                       AS State,
+    COALESCE(
+        a.Artist_Country,
+        p.Producer_Country,
+        e.Engineer_Country,
+        c.Creative_Country,
+        m.Manager_Country
+    )                                                       AS Country,
+
+    -- ── Role Info ─────────────────────────────────────────
+    g.Genre                                                 AS Primary_Genre,
+    COALESCE(
+        MAX(CAST(a.Bio AS VARCHAR(MAX))),
+        MAX(CAST(p.Bio AS VARCHAR(MAX))),
+        MAX(CAST(e.Bio AS VARCHAR(MAX))),
+        MAX(CAST(c.Bio AS VARCHAR(MAX)))
+    )                                                       AS Bio,
+    COALESCE(
+        a.Years_Experience,
+        p.Years_Experience,
+        e.Years_Experience
+    )                                                       AS Years_Experience,
+
+    -- ── Artist Specific ───────────────────────────────────
+    MAX(CAST(a.ASCAP_ID AS VARCHAR(MAX)))                   AS ASCAP_ID,
+    MAX(a.Signed_2_Label)                                   AS Signed_2_Label,
+    MAX(CAST(a.Artist_Album_Catelog AS VARCHAR(MAX)))        AS Artist_Album_Catelog,
+    rl.Label_Name                                           AS Record_Label,
+    rl.Record_Label_Owner                                   AS Label_Owner,
+
+    -- ── Producer Specific ─────────────────────────────────
+    p.Genre_Specialty                                       AS Producer_Genre_Specialty,
+    p.DAW_Software                                          AS Producer_DAW,
+
+    -- ── Engineer Specific ─────────────────────────────────
+    e.Engineer_Type,
+    e.Studio_Name,
+    e.DAW_Software                                          AS Engineer_DAW,
+
+    -- ── Creative Specific ─────────────────────────────────
+    c.Creative_Field,
+    c.Creative_SubField,
+
+    -- ── Manager Specific ──────────────────────────────────
+    m.Manager_Phone_Number,
+    m.Label_Name                                            AS Manager_Label,
+
+    -- ── Social Media ──────────────────────────────────────
+    COALESCE(
+        MAX(CAST(a.Artist_Instagram_URL AS VARCHAR(MAX))),
+        MAX(CAST(p.Instagram_URL AS VARCHAR(MAX))),
+        MAX(CAST(e.Instagram_URL AS VARCHAR(MAX))),
+        MAX(CAST(c.Instagram_URL AS VARCHAR(MAX))),
+        MAX(CAST(m.Manager_Instagram_URL AS VARCHAR(MAX)))
+    )                                                       AS Instagram,
+    COALESCE(
+        MAX(CAST(a.Artist_TikTok_URL AS VARCHAR(MAX))),
+        MAX(CAST(p.TikTok_URL AS VARCHAR(MAX))),
+        MAX(CAST(e.TikTok_URL AS VARCHAR(MAX))),
+        MAX(CAST(c.TikTok_URL AS VARCHAR(MAX)))
+    )                                                       AS TikTok,
+    COALESCE(
+        MAX(CAST(a.Artist_Spotify_URL AS VARCHAR(MAX))),
+        MAX(CAST(p.Spotify_URL AS VARCHAR(MAX)))
+    )                                                       AS Spotify,
+    COALESCE(
+        MAX(CAST(a.Artist_Youtube_URL AS VARCHAR(MAX))),
+        MAX(CAST(p.Youtube_URL AS VARCHAR(MAX))),
+        MAX(CAST(e.Youtube_URL AS VARCHAR(MAX))),
+        MAX(CAST(c.Youtube_URL AS VARCHAR(MAX)))
+    )                                                       AS YouTube,
+
+    -- ── Songs & Music ─────────────────────────────────────
+    COUNT(DISTINCT s.Song_ID)                               AS Total_Songs,
+    COALESCE(SUM(st.Stream_Count), 0)                       AS Total_Streams,
+    COALESCE(SUM(r.Amount), 0)                              AS Total_Royalties,
+
+    -- ── Platform Activity ─────────────────────────────────
+    COUNT(DISTINCT cr_sent.Request_ID)                      AS Collabs_Sent,
+    COUNT(DISTINCT cr_recv.Request_ID)                      AS Collabs_Received,
+    COUNT(DISTINCT msg.Message_ID)                          AS Messages_Sent,
+    COUNT(DISTINCT n.Notification_ID)                       AS Notifications,
+    COUNT(DISTINCT pc.Connection_ID)                        AS Platform_Connections,
+
+    -- ── Contracts ─────────────────────────────────────────
+    COUNT(DISTINCT con.Contract_ID)                         AS Total_Contracts,
+    MAX(con.Deal_Type)                                      AS Latest_Deal_Type,
+    MAX(con.Contract_End_Date)                              AS Latest_Contract_End
+
+FROM dbo.ArtistLogins al
+
+-- ── Role Tables ───────────────────────────────────────────
+LEFT JOIN dbo.Artists a
+    ON al.Linked_ID = a.Artist_ID
+    AND al.Role = 'Artist'
+
+LEFT JOIN dbo.Producers p
+    ON al.Linked_ID = p.Producer_ID
+    AND al.Role = 'Producer'
+
+LEFT JOIN dbo.Engineers e
+    ON al.Linked_ID = e.Engineer_ID
+    AND al.Role = 'Engineer'
+
+LEFT JOIN dbo.Creatives c
+    ON al.Linked_ID = c.Creative_ID
+    AND al.Role = 'Creative'
+
+LEFT JOIN dbo.Manager m
+    ON al.Linked_ID = m.Manager_ID
+    AND al.Role = 'Manager'
+
+-- ── Supporting Tables ─────────────────────────────────────
+LEFT JOIN dbo.Genre g
+    ON a.Genre_ID = g.Genre_ID
+
+LEFT JOIN dbo.Record_Label rl
+    ON a.Record_Label_ID = rl.Record_Label_ID
+
+-- ── Songs & Streams ───────────────────────────────────────
+LEFT JOIN dbo.Songs s
+    ON a.Artist_ID = s.Artist_ID
+
+LEFT JOIN dbo.Streams st
+    ON s.Song_ID = st.Song_ID
+
+-- ── Royalties ─────────────────────────────────────────────
+LEFT JOIN dbo.Royalties r
+    ON a.Artist_ID = r.Artist_ID
+
+-- ── Collabs ───────────────────────────────────────────────
+LEFT JOIN dbo.Collab_Requests cr_sent
+    ON al.Login_ID = cr_sent.Sender_Login_ID
+
+LEFT JOIN dbo.Collab_Requests cr_recv
+    ON al.Login_ID = cr_recv.Receiver_Login_ID
+
+-- ── Messages ──────────────────────────────────────────────
+LEFT JOIN dbo.Messages msg
+    ON al.Login_ID = msg.Sender_ID
+
+-- ── Notifications ─────────────────────────────────────────
+LEFT JOIN dbo.Notifications n
+    ON al.Login_ID = n.Recipient_ID
+
+-- ── Platform Connections ──────────────────────────────────
+LEFT JOIN dbo.Platform_Connections pc
+    ON al.Login_ID = pc.Login_ID
+
+-- ── Contracts ─────────────────────────────────────────────
+LEFT JOIN dbo.Contracts con
+    ON a.Artist_ID = con.Artist_ID
+
+GROUP BY
+    al.TAP_ID,
+    al.Role,
+    al.Artist_Name,
+    al.Artist_Email,
+    al.Created_Date,
+    a.Artist_City, p.Producer_City, e.Engineer_City, c.Creative_City, m.Manager_City,
+    a.Artist_State, p.Producer_State, e.Engineer_State, c.Creative_State, m.Manager_State,
+    a.Artist_Country, p.Producer_Country, e.Engineer_Country, c.Creative_Country, m.Manager_Country,
+    g.Genre,
+    a.Years_Experience, p.Years_Experience, e.Years_Experience,
+    rl.Label_Name,
+    rl.Record_Label_Owner,
+    p.Genre_Specialty,
+    p.DAW_Software,
+    e.Engineer_Type,
+    e.Studio_Name,
+    e.DAW_Software,
+    c.Creative_Field,
+    c.Creative_SubField,
+    m.Manager_Phone_Number,
+    m.Label_Name,
+    con.Deal_Type,
+    con.Contract_End_Date
+
+ORDER BY al.Created_Date DESC

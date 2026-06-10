@@ -1415,5 +1415,21 @@ app.get('/api/connections', authMiddleware, async (req, res) => {
   }
 });
 
+const keepAlive = async () => {
+  try {
+    const { getPool } = require('./db/connection');
+    const pool = await getPool();
+    await pool.request().query('SELECT 1');
+    console.log('DB keep-alive ping sent');
+  } catch (err) {
+    console.error('Keep-alive failed:', err.message);
+  }
+};
+
+// Start pinging after 30 seconds, then every 4 minutes
+setTimeout(() => {
+  keepAlive();
+  setInterval(keepAlive, 4 * 60 * 1000);
+}, 30000);
 
 app.listen(PORT, () => console.log("Server running on port " + PORT));
