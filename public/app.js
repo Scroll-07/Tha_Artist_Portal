@@ -166,6 +166,7 @@ async function loginArtist() {
     localStorage.setItem('artistName', data.name);
     localStorage.setItem('artistRole',  data.role);
     localStorage.setItem('artistTapId', data.tapId || '');
+    subscribeToPush(data.token);
     window.location.href = 'dashboard.html';
   } catch { msg.textContent = 'Login failed. Try again.'; }
 }
@@ -1252,4 +1253,27 @@ if ('serviceWorker' in navigator) {
       .then(() => console.log('TAP service worker registered'))
       .catch(err => console.log('SW error:', err));
   });
+}
+// ── Push Notification Subscription ──────────────────────────────
+async function subscribeToPush(token) {
+  try {
+    if (!('serviceWorker' in navigator) || !('PushManager' in window)) return;
+    const reg = await navigator.serviceWorker.ready;
+    const permission = await Notification.requestPermission();
+    if (permission !== 'granted') return;
+    const vapidRes = await fetch('/api/push/vapid-key');
+    const { publicKey } = await vapidRes.json();
+    const sub = await reg.pushManager.subscribe({
+      userVisibleOnly: true,
+      applicationServerKey: publicKey
+    });
+    await fetch('/api/push/subscribe', {
+      method: 'POST',
+      headers: { 'Authorization': token, 'Content-Type': 'application/json' },
+      body: JSON.stringify(sub)
+    });
+    console.log('Push notifications enabled');
+  } catch (err) {
+    console.log('Push subscription skipped:', err.message);
+  }
 }
