@@ -3,7 +3,7 @@
  * Unauthorized copying prohibited
  */
 
-const CACHE = 'tap-v14';
+const CACHE = 'tap-v15';
 
 // Only cache static assets — never HTML or API
 const FILES = [

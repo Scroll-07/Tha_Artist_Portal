@@ -1227,3 +1227,51 @@ startKeepAlive();
 startScheduler();
 
 app.listen(PORT, () => console.log(`TAP server running on port ${PORT} | DB: ${process.env.DB_DATABASE}`));
+
+// ════════════════════════════════════════════════════════════════
+// DASHBOARD DATA ROUTES (missing from v2 — added here)
+// ════════════════════════════════════════════════════════════════
+
+// GET all songs for logged-in artist
+app.get('/api/songs', authMiddleware, async (req, res) => {
+  try {
+    const pool   = await getPool();
+    const result = await pool.request()
+      .input('ArtistID', sql.Int, req.artist.artistId)
+      .query('SELECT * FROM Songs WHERE Artist_ID = @ArtistID ORDER BY Created_At DESC');
+    res.json(result.recordset);
+  } catch (err) { res.status(500).json({ message: 'Error.', error: err.message }); }
+});
+
+// GET streams for logged-in artist
+app.get('/api/streams', authMiddleware, async (req, res) => {
+  try {
+    const pool   = await getPool();
+    const result = await pool.request()
+      .input('ArtistID', sql.Int, req.artist.artistId)
+      .query('SELECT * FROM Streams WHERE Artist_ID = @ArtistID ORDER BY Date_Recorded DESC');
+    res.json(result.recordset);
+  } catch (err) { res.status(500).json({ message: 'Error.', error: err.message }); }
+});
+
+// GET royalties for logged-in artist
+app.get('/api/royalties', authMiddleware, async (req, res) => {
+  try {
+    const pool   = await getPool();
+    const result = await pool.request()
+      .input('ArtistID', sql.Int, req.artist.artistId)
+      .query('SELECT * FROM Royalties WHERE Artist_ID = @ArtistID ORDER BY Payment_Date DESC');
+    res.json(result.recordset);
+  } catch (err) { res.status(500).json({ message: 'Error.', error: err.message }); }
+});
+
+// GET contracts for logged-in artist
+app.get('/api/contracts', authMiddleware, async (req, res) => {
+  try {
+    const pool   = await getPool();
+    const result = await pool.request()
+      .input('ArtistID', sql.Int, req.artist.artistId)
+      .query('SELECT * FROM Contracts WHERE Artist_ID = @ArtistID ORDER BY Contract_Start_Date DESC');
+    res.json(result.recordset);
+  } catch (err) { res.status(500).json({ message: 'Error.', error: err.message }); }
+});

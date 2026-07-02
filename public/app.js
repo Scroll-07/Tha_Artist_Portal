@@ -163,7 +163,7 @@ async function loginArtist() {
     const data = await res.json();
     if (!res.ok) { msg.textContent = data.message; return; }
     localStorage.setItem('artistToken', data.token);
-    localStorage.setItem('artistName',  data.artistName);
+    localStorage.setItem('artistName', data.name);
     localStorage.setItem('artistRole',  data.role);
     localStorage.setItem('artistTapId', data.tapId || '');
     window.location.href = 'dashboard.html';
