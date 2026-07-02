@@ -3,9 +3,9 @@
  * Unauthorized copying prohibited
  */
 
-const CACHE = 'tap-v13';
+const CACHE = 'tap-v14';
 
-// Only cache static assets -- never cache HTML files
+// Only cache static assets — never HTML or API
 const FILES = [
   '/app.js',
   '/style.css',
@@ -14,16 +14,16 @@ const FILES = [
   '/manifest.json'
 ];
 
+// ── Install ───────────────────────────────────────────────────────
 self.addEventListener('install', e => {
   e.waitUntil(
     caches.open(CACHE).then(c => c.addAll(FILES))
   );
-  // Activate immediately without waiting
   self.skipWaiting();
 });
 
+// ── Activate — clear old caches ───────────────────────────────────
 self.addEventListener('activate', e => {
-  // Delete all old caches
   e.waitUntil(
     caches.keys().then(keys =>
       Promise.all(keys.filter(k => k !== CACHE).map(k => caches.delete(k)))
@@ -32,25 +32,62 @@ self.addEventListener('activate', e => {
   self.clients.claim();
 });
 
+// ── Fetch — never cache HTML or API ──────────────────────────────
 self.addEventListener('fetch', e => {
   const url = new URL(e.request.url);
-
-  // Never cache HTML files -- always fetch fresh from server
-  if (e.request.destination === 'document' ||
-      url.pathname.endsWith('.html') ||
-      url.pathname === '/') {
+  if (
+    e.request.destination === 'document' ||
+    url.pathname.endsWith('.html') ||
+    url.pathname === '/' ||
+    url.pathname.startsWith('/api/')
+  ) {
     e.respondWith(fetch(e.request));
     return;
   }
-
-  // Never cache API calls
-  if (url.pathname.startsWith('/api/')) {
-    e.respondWith(fetch(e.request));
-    return;
-  }
-
-  // For everything else use cache first then network
   e.respondWith(
     caches.match(e.request).then(r => r || fetch(e.request))
+  );
+});
+
+// ── Push notification received ────────────────────────────────────
+self.addEventListener('push', e => {
+  let data = { title: 'Tha Artist Portal', body: 'You have a new notification.', url: '/dashboard.html' };
+  try {
+    if (e.data) data = { ...data, ...e.data.json() };
+  } catch (_) {}
+
+  e.waitUntil(
+    self.registration.showNotification(data.title, {
+      body:    data.body,
+      icon:    '/icon-192.png',
+      badge:   '/icon-192.png',
+      vibrate: [200, 100, 200],
+      data:    { url: data.url },
+      actions: [
+        { action: 'view',    title: 'View' },
+        { action: 'dismiss', title: 'Dismiss' }
+      ]
+    })
+  );
+});
+
+// ── Notification click — open the app ────────────────────────────
+self.addEventListener('notificationclick', e => {
+  e.notification.close();
+  if (e.action === 'dismiss') return;
+
+  const targetUrl = e.notification.data?.url || '/dashboard.html';
+  e.waitUntil(
+    clients.matchAll({ type: 'window', includeUncontrolled: true }).then(clientList => {
+      // If TAP is already open, focus it
+      for (const client of clientList) {
+        if (client.url.includes(self.location.origin) && 'focus' in client) {
+          client.navigate(targetUrl);
+          return client.focus();
+        }
+      }
+      // Otherwise open a new window
+      if (clients.openWindow) return clients.openWindow(targetUrl);
+    })
   );
 });
