@@ -1277,3 +1277,23 @@ async function subscribeToPush(token) {
     console.log('Push subscription skipped:', err.message);
   }
 }
+
+// ── Test Push Notification ───────────────────────────────────────
+async function testPushNotification() {
+  const token = localStorage.getItem('artistToken');
+  if (!token) return alert('Please log in first.');
+  try {
+    const res = await fetch('/api/push/test', {
+      method: 'POST',
+      headers: { 'Authorization': token }
+    });
+    const data = await res.json();
+    if (res.ok) {
+      alert('Test notification sent! You should receive it shortly.');
+    } else {
+      alert('Failed: ' + data.message + '\nMake sure you have allowed notifications in your browser.');
+    }
+  } catch (err) {
+    alert('Error: ' + err.message);
+  }
+}

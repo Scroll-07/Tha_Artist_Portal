@@ -1275,3 +1275,20 @@ app.get('/api/contracts', authMiddleware, async (req, res) => {
     res.json(result.recordset);
   } catch (err) { res.status(500).json({ message: 'Error.', error: err.message }); }
 });
+
+// POST test push notification — sends a real push to the logged-in user
+app.post('/api/push/test', authMiddleware, async (req, res) => {
+  try {
+    const pool = await getPool();
+    await sendPushToUser(
+      pool,
+      req.artist.loginId,
+      'TAP Notification Test 🎵',
+      'Push notifications are working! You will now receive alerts for messages and collab requests.',
+      '/dashboard.html'
+    );
+    res.json({ message: 'Test notification sent!' });
+  } catch (err) {
+    res.status(500).json({ message: 'Failed to send test.', error: err.message });
+  }
+});
