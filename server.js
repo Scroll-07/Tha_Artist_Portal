@@ -1223,6 +1223,98 @@ app.post('/api/admin/cleanup', adminAuth, async (req, res) => {
 // START SERVER
 // ════════════════════════════════════════════════════════════════
 
+// ── FORGOT PASSWORD ──────────────────────────────────────────────
+
+// POST /api/forgot-password — sends reset email
+app.post('/api/forgot-password', async (req, res) => {
+  const { email } = req.body;
+  if (!email) return res.status(400).json({ message: 'Email is required.' });
+  try {
+    const pool   = await getPool();
+    const result = await pool.request()
+      .input('Email', sql.NVarChar, email)
+      .query('SELECT Login_ID, Artist_Name FROM ArtistLogins WHERE Artist_Email = @Email');
+    if (result.recordset.length === 0)
+      return res.json({ message: 'If that email is registered, a reset link is on its way.' });
+    const user   = result.recordset[0];
+    const crypto = require('crypto');
+    const token  = crypto.randomBytes(32).toString('hex');
+    const expiry = new Date(Date.now() + 60 * 60 * 1000);
+    await pool.request()
+      .input('LoginID',   sql.Int,      user.Login_ID)
+      .input('Token',     sql.NVarChar, token)
+      .input('ExpiresAt', sql.DateTime, expiry)
+      .query(`INSERT INTO Password_Reset_Tokens (Login_ID, Token, Expires_At)
+              VALUES (@LoginID, @Token, @ExpiresAt)`);
+    const resetUrl = process.env.APP_URL + '/reset-password.html?token=' + token;
+    const html = `
+      <div style="font-family:Arial;max-width:500px;margin:0 auto;
+        background:#111;color:#eee;padding:32px;border-radius:12px;">
+        <h1 style="color:#D4AF37;">Tha Artist Portal</h1>
+        <p style="color:#888;">Your data. Your leverage.</p>
+        <div style="background:#1a1a1a;border-left:4px solid #D4AF37;
+          border-radius:8px;padding:20px;margin-bottom:24px;">
+          <p style="color:#eee;margin:0 0 8px;">Hi ${user.Artist_Name},</p>
+          <p style="color:#aaa;margin:0;">
+            We received a request to reset your TAP password.
+            Click below to set a new password. This link expires in 1 hour.
+          </p>
+        </div>
+        <a href="${resetUrl}"
+           style="display:inline-block;background:#B8860B;color:#000;
+           padding:14px 28px;border-radius:8px;text-decoration:none;
+           font-weight:bold;font-size:1rem;margin-bottom:24px;">
+          Reset My Password
+        </a>
+        <p style="color:#555;font-size:0.8rem;">
+          If you did not request this, ignore this email.
+        </p>
+        <p style="color:#444;font-size:0.75rem;margin-top:24px;">
+          Copyright 2026 BOLAJI B ADEEKO LLC. All Rights Reserved.
+        </p>
+      </div>`;
+    await sendEmail(email, 'Reset your TAP password', html);
+    res.json({ message: 'If that email is registered, a reset link is on its way.' });
+  } catch (err) {
+    console.error('Forgot password error:', err.message);
+    res.status(500).json({ message: 'Something went wrong. Try again.' });
+  }
+});
+
+// POST /api/reset-password — validates token and sets new password
+app.post('/api/reset-password', async (req, res) => {
+  const { token, newPassword } = req.body;
+  if (!token || !newPassword)
+    return res.status(400).json({ message: 'Token and new password are required.' });
+  if (newPassword.length < 8)
+    return res.status(400).json({ message: 'Password must be at least 8 characters.' });
+  try {
+    const pool   = await getPool();
+    const result = await pool.request()
+      .input('Token', sql.NVarChar, token)
+      .query('SELECT Token_ID, Login_ID, Expires_At, Used FROM Password_Reset_Tokens WHERE Token = @Token');
+    if (result.recordset.length === 0)
+      return res.status(400).json({ message: 'Invalid reset link. Please request a new one.' });
+    const rec = result.recordset[0];
+    if (rec.Used)
+      return res.status(400).json({ message: 'This link has already been used. Please request a new one.' });
+    if (new Date() > new Date(rec.Expires_At))
+      return res.status(400).json({ message: 'This link has expired. Please request a new one.' });
+    const hash = await bcrypt.hash(newPassword, 12);
+    await pool.request()
+      .input('Hash',    sql.NVarChar, hash)
+      .input('LoginID', sql.Int,      rec.Login_ID)
+      .query('UPDATE ArtistLogins SET Password_Hash = @Hash WHERE Login_ID = @LoginID');
+    await pool.request()
+      .input('TokenID', sql.Int, rec.Token_ID)
+      .query('UPDATE Password_Reset_Tokens SET Used = 1 WHERE Token_ID = @TokenID');
+    res.json({ message: 'Password reset successfully!' });
+  } catch (err) {
+    console.error('Reset password error:', err.message);
+    res.status(500).json({ message: 'Something went wrong. Try again.' });
+  }
+});
+
 startKeepAlive();
 startScheduler();
 

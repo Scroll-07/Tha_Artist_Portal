@@ -1297,3 +1297,50 @@ async function testPushNotification() {
     alert('Error: ' + err.message);
   }
 }
+// ── Forgot Password ─────────────────────────────────────────────
+function showForgotPassword(e) {
+  if (e) e.preventDefault();
+  const modal = document.getElementById('forgotModal');
+  if (modal) {
+    modal.style.display = 'flex';
+    document.getElementById('forgotEmail').value = '';
+    document.getElementById('forgotMsg').textContent = '';
+  }
+}
+
+function closeForgotModal() {
+  const modal = document.getElementById('forgotModal');
+  if (modal) modal.style.display = 'none';
+}
+
+async function submitForgotPassword() {
+  const email = document.getElementById('forgotEmail').value.trim();
+  const msg   = document.getElementById('forgotMsg');
+
+  if (!email) {
+    msg.style.color = '#f44336';
+    msg.textContent = 'Please enter your email address.';
+    return;
+  }
+
+  try {
+    const res  = await fetch('/api/forgot-password', {
+      method:  'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body:    JSON.stringify({ email })
+    });
+    const data = await res.json();
+    // Always show success message even if email not found (security best practice)
+    msg.style.color = '#4CAF50';
+    msg.textContent = 'If that email is registered, a reset link is on its way.';
+  } catch {
+    msg.style.color = '#f44336';
+    msg.textContent = 'Something went wrong. Try again.';
+  }
+}
+
+// Close forgot modal when clicking outside
+document.addEventListener('click', e => {
+  const modal = document.getElementById('forgotModal');
+  if (modal && e.target === modal) closeForgotModal();
+});

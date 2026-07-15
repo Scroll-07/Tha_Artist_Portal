@@ -13,13 +13,12 @@
       border-bottom: 1px solid #333; padding-bottom: 4px; }
   </style>
   <link rel="manifest" href="/manifest.json">
-<meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="black">
-<meta name="apple-mobile-web-app-title" content="TAP">
-<link rel="apple-touch-icon" href="/icon-512.png">
-<meta name="theme-color" content="#B8860B">
-
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black">
+  <meta name="apple-mobile-web-app-title" content="TAP">
+  <link rel="apple-touch-icon" href="/icon-512.png">
+  <meta name="theme-color" content="#B8860B">
 </head>
 <body>
   <div class="auth-container" style="max-width:560px">
@@ -27,8 +26,8 @@
     <p class="portal-sub">Your data. Your leverage.</p>
 
     <div class="tabs">
-<button class="tab-btn active" onclick="showTab('login')">Login</button>
-<button class="tab-btn" onclick="showTab('register')">Register</button>
+      <button class="tab-btn active" onclick="showTab('login')">Login</button>
+      <button class="tab-btn" onclick="showTab('register')">Register</button>
     </div>
 
     <!-- LOGIN -->
@@ -37,91 +36,116 @@
       <input type="password" id="loginPass"  placeholder="Password">
       <button class="gold-btn" onclick="loginArtist()">Login</button>
       <p id="loginMsg" class="msg"></p>
+      <p style="text-align:center; margin-top:8px;">
+        <a href="#" onclick="showForgotPassword(event)"
+           style="color:#B8860B; font-size:0.85rem; text-decoration:none;">
+          Forgot password?
+        </a>
+      </p>
     </div>
 
-<!-- REGISTER -->
-<div id='register' class='tab-content'>
-  <div class='register-grid'>
+    <!-- REGISTER -->
+    <div id='register' class='tab-content'>
+      <div class='register-grid'>
 
+        <p class='section-divider'>Account Info</p>
+        <select class='full-width' id='regRole' onchange='updateRoleFields()'>
+          <option value=''>-- Select Your Role *</option>
+          <optgroup label='Music Industry'>
+            <option value='Artist'>Artist (Rapper, Singer, Songwriter, Musician)</option>
+            <option value='Manager'>Manager</option>
+            <option value='Producer'>Producer / Beatmaker</option>
+            <option value='Engineer'>Audio Engineer (Mixing, Mastering, Recording)</option>
+            <option value='Record Label'>Record Label</option>
+          </optgroup>
+          <optgroup label='Visual Arts'>
+            <option value='Painter'>Painter / Visual Artist</option>
+            <option value='Photographer'>Photographer</option>
+            <option value='Graphic Designer'>Graphic Designer</option>
+          </optgroup>
+          <optgroup label='Film and Media'>
+            <option value='Filmmaker'>Filmmaker / Director</option>
+            <option value='Videographer'>Videographer</option>
+          </optgroup>
+          <optgroup label='Performance'>
+            <option value='Dancer'>Dancer / Choreographer</option>
+            <option value='Actor'>Actor / Actress</option>
+          </optgroup>
+          <optgroup label='Fashion'>
+            <option value='Fashion Designer'>Fashion Designer</option>
+            <option value='Stylist'>Stylist</option>
+          </optgroup>
+          <option value='Other'>Other Creative</option>
+        </select>
 
-    <p class='section-divider'>Account Info</p>
-    <select class='full-width' id='regRole' onchange='updateRoleFields()'>
-      <option value=''>-- Select Your Role *</option>
-      <optgroup label='Music Industry'>
-        <option value='Artist'>Artist (Rapper, Singer, Songwriter, Musician)</option>
-        <option value='Manager'>Manager</option>
-        <option value='Producer'>Producer / Beatmaker</option>
-        <option value='Engineer'>Audio Engineer (Mixing, Mastering, Recording)</option>
-        <option value='Record Label'>Record Label</option>
-      </optgroup>
-      <optgroup label='Visual Arts'>
-        <option value='Painter'>Painter / Visual Artist</option>
-        <option value='Photographer'>Photographer</option>
-        <option value='Graphic Designer'>Graphic Designer</option>
-      </optgroup>
-      <optgroup label='Film and Media'>
-        <option value='Filmmaker'>Filmmaker / Director</option>
-        <option value='Videographer'>Videographer</option>
-      </optgroup>
-      <optgroup label='Performance'>
-        <option value='Dancer'>Dancer / Choreographer</option>
-        <option value='Actor'>Actor / Actress</option>
-      </optgroup>
-      <optgroup label='Fashion'>
-        <option value='Fashion Designer'>Fashion Designer</option>
-        <option value='Stylist'>Stylist</option>
-      </optgroup>
-      <option value='Other'>Other Creative</option>
-    </select>
+        <input class='full-width' type='text'     id='regName'  placeholder='Full Name / Stage Name *'>
+        <input class='full-width' type='email'    id='regEmail' placeholder='Email Address *'>
+        <input class='full-width' type='password' id='regPass'  placeholder='Create a Password *'>
 
+        <p class='section-divider'>Contact and Location</p>
+        <input type='text' id='regPhone'   placeholder='Phone Number'>
+        <input type='text' id='regCity'    placeholder='City'>
+        <input type='text' id='regState'   placeholder='State'>
+        <input type='text' id='regCountry' placeholder='Country'>
 
-    <input class='full-width' type='text'     id='regName'  placeholder='Full Name / Stage Name *'>
-    <input class='full-width' type='email'    id='regEmail' placeholder='Email Address *'>
-    <input class='full-width' type='password' id='regPass'  placeholder='Create a Password *'>
+        <div id='roleSpecificFields' class='full-width'></div>
 
+        <p class='section-divider'>Link to Your Team (Optional)</p>
+        <input class='full-width' type='text' id='regTapIdLink'
+          placeholder='TAP ID of your Manager / Artist / Label (e.g. TAP-MGR-2026-00001)'>
+        <p style='color:#888; font-size:0.8rem; grid-column:1/-1;'>
+          Ask your manager, label or artist for their TAP ID to link your accounts.
+          You can skip this and link later.</p>
 
-    <p class='section-divider'>Contact and Location</p>
-    <input type='text' id='regPhone' placeholder='Phone Number'>
-    <input type='text' id='regCity'  placeholder='City'>
-    <input type='text' id='regState' placeholder='State'>
-    <input type='text' id='regCountry' placeholder='Country'>
+        <p class='section-divider'>Social and Streaming Links</p>
+        <input type='text' id='regInstagram' placeholder='Instagram URL'>
+        <input type='text' id='regTikTok'    placeholder='TikTok URL'>
+        <input type='text' id='regSpotify'   placeholder='Spotify URL'>
+        <input type='text' id='regApple'     placeholder='Apple Music URL'>
+        <input type='text' id='regYouTube'   placeholder='YouTube URL'>
+        <input type='text' id='regWebsite'   placeholder='Website / Portfolio URL'>
 
+        <textarea id='regBio' class='full-width'
+          placeholder='Short bio -- tell the community about yourself'
+          style='background:#222; border:1px solid #444; border-radius:6px; padding:10px;
+                 color:#eee; font-size:0.9rem; min-height:80px; resize:vertical;'></textarea>
 
-    <!-- Dynamic role-specific fields -->
-    <div id='roleSpecificFields' class='full-width'></div>
+      </div>
+      <br>
+      <button class='gold-btn' onclick='registerArtist()'>Submit Registration</button>
+      <p id='regMsg' class='msg'></p>
+    </div>
 
+  </div><!-- end auth-container -->
 
-    <p class='section-divider'>Link to Your Team (Optional)</p>
-    <input class='full-width' type='text' id='regTapIdLink'
-      placeholder='TAP ID of your Manager / Artist / Label (e.g. TAP-MGR-2026-00001)'>
-    <p style='color:#888; font-size:0.8rem; grid-column:1/-1;'>
-      Ask your manager, label or artist for their TAP ID to link your accounts.
-      You can skip this and link later.</p>
-
-
-    <p class='section-divider'>Social and Streaming Links</p>
-    <input type='text' id='regInstagram' placeholder='Instagram URL'>
-    <input type='text' id='regTikTok'    placeholder='TikTok URL'>
-    <input type='text' id='regSpotify'   placeholder='Spotify URL'>
-    <input type='text' id='regApple'     placeholder='Apple Music URL'>
-    <input type='text' id='regYouTube'   placeholder='YouTube URL'>
-    <input type='text' id='regWebsite'   placeholder='Website / Portfolio URL'>
-
-
-    <textarea id='regBio' class='full-width'
-      placeholder='Short bio -- tell the community about yourself'
-      style='background:#222; border:1px solid #444; border-radius:6px; padding:10px;
-             color:#eee; font-size:0.9rem; min-height:80px; resize:vertical;'></textarea>
-
-
+  <!-- FORGOT PASSWORD MODAL — outside auth-container -->
+  <div id="forgotModal" style="display:none; position:fixed; inset:0;
+    background:rgba(0,0,0,0.8); backdrop-filter:blur(8px);
+    z-index:999; align-items:center; justify-content:center;">
+    <div style="background:#1a1a1a; border:1px solid #B8860B; border-radius:16px;
+      padding:32px; width:90%; max-width:400px; display:flex; flex-direction:column; gap:16px;">
+      <h2 style="color:#D4AF37; font-size:1.3rem; margin:0;">Reset Password</h2>
+      <p style="color:#888; font-size:0.875rem; margin:0;">
+        Enter your email and we'll send you a reset link.
+      </p>
+      <input type="email" id="forgotEmail" placeholder="Your email address"
+        style="background:#111; border:1px solid #333; border-radius:8px;
+               color:#eee; padding:12px; font-size:0.9rem; outline:none; width:100%;
+               box-sizing:border-box;"/>
+      <p id="forgotMsg" style="font-size:0.85rem; margin:0;"></p>
+      <button onclick="submitForgotPassword()"
+        style="background:#B8860B; color:#000; border:none; border-radius:8px;
+               padding:12px; font-weight:700; cursor:pointer; font-size:0.95rem;">
+        Send Reset Link
+      </button>
+      <button onclick="closeForgotModal()"
+        style="background:transparent; color:#666; border:1px solid #333;
+               border-radius:8px; padding:10px; cursor:pointer; font-size:0.875rem;">
+        Cancel
+      </button>
+    </div>
   </div>
-  <br>
-  <button class='gold-btn' onclick='registerArtist()'>Submit Registration</button>
-  <p id='regMsg' class='msg'></p>
-</div>
 
-
-  </div>
   <script src="app.js"></script>
 </body>
-</html>        
+</html>
