@@ -1344,3 +1344,35 @@ document.addEventListener('click', e => {
   const modal = document.getElementById('forgotModal');
   if (modal && e.target === modal) closeForgotModal();
 });
+// ── Manual Push Subscribe ────────────────────────────────────────
+async function manualSubscribePush() {
+  const token = localStorage.getItem('artistToken');
+  if (!token) return alert('Please log in first.');
+  try {
+    if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
+      return alert('Push not supported in this browser.');
+    }
+    const permission = await Notification.requestPermission();
+    alert('Permission status: ' + permission);
+    if (permission !== 'granted') return;
+
+    const reg = await navigator.serviceWorker.ready;
+    const vapidRes = await fetch('/api/push/vapid-key');
+    const { publicKey } = await vapidRes.json();
+
+    const sub = await reg.pushManager.subscribe({
+      userVisibleOnly: true,
+      applicationServerKey: publicKey
+    });
+
+    const res = await fetch('/api/push/subscribe', {
+      method: 'POST',
+      headers: { 'Authorization': token, 'Content-Type': 'application/json' },
+      body: JSON.stringify(sub)
+    });
+    const data = await res.json();
+    alert('Subscribe result: ' + data.message);
+  } catch (err) {
+    alert('Subscribe error: ' + err.message);
+  }
+}
