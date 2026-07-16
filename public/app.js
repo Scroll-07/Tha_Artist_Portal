@@ -166,7 +166,7 @@ async function loginArtist() {
     localStorage.setItem('artistName', data.name);
     localStorage.setItem('artistRole',  data.role);
     localStorage.setItem('artistTapId', data.tapId || '');
-    subscribeToPush(data.token);
+    setTimeout(() => subscribeToPush(data.token), 2000);
     window.location.href = 'dashboard.html';
   } catch { msg.textContent = 'Login failed. Try again.'; }
 }
