@@ -11,6 +11,7 @@ const cors     = require('cors');
 const bcrypt   = require('bcrypt');
 const jwt      = require('jsonwebtoken');
 const webpush  = require('web-push');
+const fetch = require('node-fetch');
 
 const { getPool, startKeepAlive } = require('./db/connection');
 const { startScheduler, runNightlyCleanup } = require('./scheduler/jobs');
@@ -1314,6 +1315,335 @@ app.post('/api/reset-password', async (req, res) => {
     res.status(500).json({ message: 'Something went wrong. Try again.' });
   }
 });
+
+// ════════════════════════════════════════════════════════════════
+// SPOTIFY INTEGRATION ROUTES
+// ════════════════════════════════════════════════════════════════
+
+const SPOTIFY_SCOPES = [
+  'user-read-private',
+  'user-read-email',
+  'user-top-read',
+  'user-read-recently-played',
+  'user-library-read'
+].join(' ');
+
+// ── Helper: get valid Spotify access token (refresh if expired) ──
+async function getSpotifyToken(pool, loginId) {
+  const result = await pool.request()
+    .input('LoginID', sql.Int, loginId)
+    .query('SELECT * FROM Spotify_Tokens WHERE Login_ID = @LoginID');
+
+  if (!result.recordset.length) return null;
+  const tok = result.recordset[0];
+
+  // If token still valid, return it
+  if (new Date() < new Date(tok.Expires_At)) return tok.Access_Token;
+
+  // Token expired — refresh it
+  const params = new URLSearchParams({
+    grant_type:    'refresh_token',
+    refresh_token: tok.Refresh_Token
+  });
+  const creds = Buffer.from(
+    process.env.SPOTIFY_CLIENT_ID + ':' + process.env.SPOTIFY_CLIENT_SECRET
+  ).toString('base64');
+
+  const res = await fetch('https://accounts.spotify.com/api/token', {
+    method:  'POST',
+    headers: {
+      'Authorization': 'Basic ' + creds,
+      'Content-Type':  'application/x-www-form-urlencoded'
+    },
+    body: params.toString()
+  });
+
+  if (!res.ok) return null;
+  const data = await res.json();
+
+  const newExpiry = new Date(Date.now() + data.expires_in * 1000);
+  await pool.request()
+    .input('LoginID',     sql.Int,      loginId)
+    .input('AccessToken', sql.NVarChar, data.access_token)
+    .input('ExpiresAt',   sql.DateTime, newExpiry)
+    .query(`UPDATE Spotify_Tokens
+            SET Access_Token = @AccessToken, Expires_At = @ExpiresAt, Updated_At = GETDATE()
+            WHERE Login_ID = @LoginID`);
+
+  return data.access_token;
+}
+
+// ── Helper: get public artist data using Client Credentials ──────
+async function getSpotifyClientToken() {
+  const creds = Buffer.from(
+    process.env.SPOTIFY_CLIENT_ID + ':' + process.env.SPOTIFY_CLIENT_SECRET
+  ).toString('base64');
+
+  const res = await fetch('https://accounts.spotify.com/api/token', {
+    method:  'POST',
+    headers: {
+      'Authorization': 'Basic ' + creds,
+      'Content-Type':  'application/x-www-form-urlencoded'
+    },
+    body: 'grant_type=client_credentials'
+  });
+
+  const data = await res.json();
+  return data.access_token;
+}
+
+// ── Extract Spotify Artist ID from URL ───────────────────────────
+function extractSpotifyArtistId(url) {
+  if (!url) return null;
+  const match = url.match(/artist\/([a-zA-Z0-9]+)/);
+  return match ? match[1] : null;
+}
+
+// GET /api/spotify/connect — redirect to Spotify login
+app.get('/api/spotify/connect', authMiddleware, (req, res) => {
+  const params = new URLSearchParams({
+    response_type: 'code',
+    client_id:     process.env.SPOTIFY_CLIENT_ID,
+    scope:         SPOTIFY_SCOPES,
+    redirect_uri:  process.env.APP_URL + '/api/auth/spotify/callback',
+    state:         req.artist.loginId.toString()
+  });
+  res.redirect('https://accounts.spotify.com/authorize?' + params.toString());
+});
+
+// GET /api/auth/spotify/callback — Spotify redirects here after login
+app.get('/api/auth/spotify/callback', async (req, res) => {
+  const { code, state, error } = req.query;
+
+  if (error) {
+    return res.redirect('/dashboard.html?spotify=error&reason=' + error);
+  }
+
+  const loginId = parseInt(state);
+  if (!loginId) return res.redirect('/dashboard.html?spotify=error&reason=invalid_state');
+
+  try {
+    const creds = Buffer.from(
+      process.env.SPOTIFY_CLIENT_ID + ':' + process.env.SPOTIFY_CLIENT_SECRET
+    ).toString('base64');
+
+    // Exchange code for tokens
+    const tokenRes = await fetch('https://accounts.spotify.com/api/token', {
+      method:  'POST',
+      headers: {
+        'Authorization': 'Basic ' + creds,
+        'Content-Type':  'application/x-www-form-urlencoded'
+      },
+      body: new URLSearchParams({
+        grant_type:   'authorization_code',
+        code,
+        redirect_uri: process.env.APP_URL + '/api/auth/spotify/callback'
+      }).toString()
+    });
+
+    if (!tokenRes.ok) throw new Error('Token exchange failed');
+    const tokens = await tokenRes.json();
+    const expiry  = new Date(Date.now() + tokens.expires_in * 1000);
+
+    // Get Spotify user profile
+    const profileRes = await fetch('https://api.spotify.com/v1/me', {
+      headers: { 'Authorization': 'Bearer ' + tokens.access_token }
+    });
+    const profile = await profileRes.json();
+
+    const pool = await getPool();
+
+    // Check if artist has a Spotify URL set — extract artist ID
+    const artistResult = await pool.request()
+      .input('LoginID', sql.Int, loginId)
+      .query(`SELECT a.Artist_Spotify_URL FROM ArtistLogins l
+              LEFT JOIN Artists a ON l.Artist_ID = a.Artist_ID
+              WHERE l.Login_ID = @LoginID`);
+
+    let spotifyArtistId = null;
+    if (artistResult.recordset.length && artistResult.recordset[0].Artist_Spotify_URL) {
+      spotifyArtistId = extractSpotifyArtistId(artistResult.recordset[0].Artist_Spotify_URL);
+    }
+
+    // Upsert Spotify token
+    const existing = await pool.request()
+      .input('LoginID', sql.Int, loginId)
+      .query('SELECT 1 FROM Spotify_Tokens WHERE Login_ID = @LoginID');
+
+    if (existing.recordset.length) {
+      await pool.request()
+        .input('LoginID',       sql.Int,      loginId)
+        .input('AccessToken',   sql.NVarChar, tokens.access_token)
+        .input('RefreshToken',  sql.NVarChar, tokens.refresh_token)
+        .input('ExpiresAt',     sql.DateTime, expiry)
+        .input('SpotifyUserID', sql.NVarChar, profile.id)
+        .input('ArtistID',      sql.NVarChar, spotifyArtistId)
+        .input('DisplayName',   sql.NVarChar, profile.display_name)
+        .query(`UPDATE Spotify_Tokens SET
+                Access_Token = @AccessToken, Refresh_Token = @RefreshToken,
+                Expires_At = @ExpiresAt, Spotify_User_ID = @SpotifyUserID,
+                Spotify_Artist_ID = @ArtistID, Display_Name = @DisplayName,
+                Updated_At = GETDATE()
+                WHERE Login_ID = @LoginID`);
+    } else {
+      await pool.request()
+        .input('LoginID',       sql.Int,      loginId)
+        .input('AccessToken',   sql.NVarChar, tokens.access_token)
+        .input('RefreshToken',  sql.NVarChar, tokens.refresh_token)
+        .input('ExpiresAt',     sql.DateTime, expiry)
+        .input('SpotifyUserID', sql.NVarChar, profile.id)
+        .input('ArtistID',      sql.NVarChar, spotifyArtistId)
+        .input('DisplayName',   sql.NVarChar, profile.display_name)
+        .query(`INSERT INTO Spotify_Tokens
+                (Login_ID, Access_Token, Refresh_Token, Expires_At,
+                 Spotify_User_ID, Spotify_Artist_ID, Display_Name)
+                VALUES (@LoginID, @AccessToken, @RefreshToken, @ExpiresAt,
+                 @SpotifyUserID, @ArtistID, @DisplayName)`);
+    }
+
+    res.redirect('/dashboard.html?spotify=connected');
+  } catch (err) {
+    console.error('Spotify callback error:', err.message);
+    res.redirect('/dashboard.html?spotify=error&reason=' + encodeURIComponent(err.message));
+  }
+});
+
+// GET /api/spotify/status — check if connected
+app.get('/api/spotify/status', authMiddleware, async (req, res) => {
+  try {
+    const pool   = await getPool();
+    const result = await pool.request()
+      .input('LoginID', sql.Int, req.artist.loginId)
+      .query('SELECT Display_Name, Spotify_User_ID, Spotify_Artist_ID, Updated_At FROM Spotify_Tokens WHERE Login_ID = @LoginID');
+    if (result.recordset.length) {
+      res.json({ connected: true, ...result.recordset[0] });
+    } else {
+      res.json({ connected: false });
+    }
+  } catch (err) { res.status(500).json({ message: 'Error.', error: err.message }); }
+});
+
+// GET /api/spotify/disconnect — remove Spotify connection
+app.delete('/api/spotify/disconnect', authMiddleware, async (req, res) => {
+  try {
+    const pool = await getPool();
+    await pool.request()
+      .input('LoginID', sql.Int, req.artist.loginId)
+      .query('DELETE FROM Spotify_Tokens WHERE Login_ID = @LoginID');
+    res.json({ message: 'Spotify disconnected.' });
+  } catch (err) { res.status(500).json({ message: 'Error.', error: err.message }); }
+});
+
+// GET /api/spotify/public-stats — Option 1: public artist data (no login needed)
+// Uses Spotify URL from artist profile
+app.get('/api/spotify/public-stats', authMiddleware, async (req, res) => {
+  try {
+    const pool = await getPool();
+
+    // Get artist's Spotify URL
+    const result = await pool.request()
+      .input('ArtistID', sql.Int, req.artist.artistId)
+      .query('SELECT Artist_Spotify_URL FROM Artists WHERE Artist_ID = @ArtistID');
+
+    if (!result.recordset.length || !result.recordset[0].Artist_Spotify_URL) {
+      return res.json({ connected: false, message: 'No Spotify URL set in profile.' });
+    }
+
+    const artistId = extractSpotifyArtistId(result.recordset[0].Artist_Spotify_URL);
+    if (!artistId) return res.json({ connected: false, message: 'Invalid Spotify URL.' });
+
+    const token = await getSpotifyClientToken();
+
+    // Get artist profile
+    const artistRes = await fetch(`https://api.spotify.com/v1/artists/${artistId}`, {
+      headers: { 'Authorization': 'Bearer ' + token }
+    });
+    if (!artistRes.ok) throw new Error('Artist not found on Spotify');
+    const artist = await artistRes.json();
+
+    // Get top tracks
+    const tracksRes = await fetch(
+      `https://api.spotify.com/v1/artists/${artistId}/top-tracks?market=US`,
+      { headers: { 'Authorization': 'Bearer ' + token } }
+    );
+    const tracksData = await tracksRes.json();
+
+    res.json({
+      connected:   true,
+      type:        'public',
+      name:        artist.name,
+      followers:   artist.followers?.total || 0,
+      popularity:  artist.popularity || 0,
+      genres:      artist.genres || [],
+      image:       artist.images?.[0]?.url || null,
+      topTracks:   (tracksData.tracks || []).slice(0, 5).map(t => ({
+        name:        t.name,
+        album:       t.album?.name,
+        popularity:  t.popularity,
+        preview_url: t.preview_url,
+        image:       t.album?.images?.[0]?.url
+      }))
+    });
+  } catch (err) {
+    console.error('Spotify public stats error:', err.message);
+    res.status(500).json({ message: 'Failed to fetch Spotify data.', error: err.message });
+  }
+});
+
+// GET /api/spotify/my-stats — Option 2: personal account data (OAuth required)
+app.get('/api/spotify/my-stats', authMiddleware, async (req, res) => {
+  try {
+    const pool        = await getPool();
+    const accessToken = await getSpotifyToken(pool, req.artist.loginId);
+
+    if (!accessToken) {
+      return res.json({ connected: false, message: 'Spotify account not connected.' });
+    }
+
+    const headers = { 'Authorization': 'Bearer ' + accessToken };
+
+    // Get personal top tracks, top artists, recently played
+    const [topTracksRes, topArtistsRes, recentRes] = await Promise.all([
+      fetch('https://api.spotify.com/v1/me/top/tracks?limit=5&time_range=short_term', { headers }),
+      fetch('https://api.spotify.com/v1/me/top/artists?limit=5&time_range=short_term', { headers }),
+      fetch('https://api.spotify.com/v1/me/player/recently-played?limit=10', { headers })
+    ]);
+
+    const [topTracks, topArtists, recent] = await Promise.all([
+      topTracksRes.json(),
+      topArtistsRes.json(),
+      recentRes.json()
+    ]);
+
+    res.json({
+      connected:  true,
+      type:       'personal',
+      topTracks:  (topTracks.items || []).map(t => ({
+        name:       t.name,
+        artist:     t.artists?.[0]?.name,
+        album:      t.album?.name,
+        popularity: t.popularity,
+        image:      t.album?.images?.[0]?.url
+      })),
+      topArtists: (topArtists.items || []).map(a => ({
+        name:      a.name,
+        followers: a.followers?.total,
+        genres:    a.genres,
+        image:     a.images?.[0]?.url
+      })),
+      recentTracks: (recent.items || []).map(i => ({
+        name:      i.track?.name,
+        artist:    i.track?.artists?.[0]?.name,
+        playedAt:  i.played_at,
+        image:     i.track?.album?.images?.[0]?.url
+      }))
+    });
+  } catch (err) {
+    console.error('Spotify my-stats error:', err.message);
+    res.status(500).json({ message: 'Failed to fetch personal Spotify data.', error: err.message });
+  }
+});
+
 
 startKeepAlive();
 startScheduler();
