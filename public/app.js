@@ -413,6 +413,7 @@ async function openProfile(loginId) {
         ' style="background:' + s.color + '22; border:1px solid ' + s.color + '; color:' + s.color + '">' +
         s.name + ' &#8594;</a>'
       ).join('') + '</div>' +
+      '<div id="profileSpotifyStats"></div>' +
       '<div class=collab-section>' +
       '<h3>Send a Collab Request</h3>' +
       '<textarea id=collabMessage class=collab-textarea' +
@@ -421,7 +422,32 @@ async function openProfile(loginId) {
       'Send Request</button>' +
       '<p id=collabMsg style="margin-top:8px; font-size:0.85rem;"></p>' +
       '</div>';
-    document.getElementById('profileModal').classList.add('active');
+    // Load Spotify stats for this artist
+fetch('/api/spotify/artist-stats/' + loginId, { headers: { 'Authorization': token } })
+  .then(r => r.json())
+  .then(spotify => {
+    const spotifyEl = document.getElementById('profileSpotifyStats');
+    if (!spotifyEl || !spotify.connected) return;
+    spotifyEl.innerHTML =
+      '<div style="background:#0d1f0d;border:1px solid #1DB954;border-radius:10px;padding:16px;margin-top:16px;">' +
+      '<div style="color:#1DB954;font-size:0.75rem;font-weight:700;letter-spacing:1px;text-transform:uppercase;margin-bottom:12px;">&#9836; Spotify Analytics</div>' +
+      '<div style="display:flex;gap:20px;margin-bottom:14px;">' +
+      '<div style="text-align:center;"><div style="color:#1DB954;font-size:1.3rem;font-weight:bold;">' + Number(spotify.followers).toLocaleString() + '</div><div style="color:#666;font-size:0.72rem;">Followers</div></div>' +
+      '<div style="text-align:center;"><div style="color:#1DB954;font-size:1.3rem;font-weight:bold;">' + spotify.popularity + '</div><div style="color:#666;font-size:0.72rem;">Popularity</div></div>' +
+      '<div style="text-align:center;"><div style="color:#1DB954;font-size:1.3rem;font-weight:bold;">' + spotify.markets + '</div><div style="color:#666;font-size:0.72rem;">Markets</div></div>' +
+      '</div>' +
+      (spotify.genres.length ? '<div style="color:#555;font-size:0.75rem;margin-bottom:12px;">' + spotify.genres.slice(0,3).join(' · ') + '</div>' : '') +
+      '<div style="font-size:0.72rem;color:#555;text-transform:uppercase;letter-spacing:1px;margin-bottom:8px;">Top Tracks</div>' +
+      spotify.topTracks.map(t =>
+        '<div style="display:flex;align-items:center;gap:10px;margin-bottom:6px;">' +
+        (t.image ? '<img src="' + t.image + '" style="width:32px;height:32px;border-radius:4px;"/>' : '') +
+        '<div style="flex:1;"><div style="color:#eee;font-size:0.82rem;">' + t.name + '</div>' +
+        '<div style="color:#555;font-size:0.72rem;">' + (t.album||'') + '</div></div>' +
+        '<div style="color:#1DB954;font-size:0.72rem;">&#9889;' + t.popularity + '</div></div>'
+      ).join('') +
+      '</div>';
+  }).catch(() => {});
+document.getElementById('profileModal').classList.add('active');
   } catch {
     alert('Could not load profile. Try again.');
   }

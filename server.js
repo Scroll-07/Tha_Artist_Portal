@@ -1715,3 +1715,50 @@ app.post('/api/push/test', authMiddleware, async (req, res) => {
     res.status(500).json({ message: 'Failed to send test.', error: err.message });
   }
 });
+
+// GET /api/spotify/artist-stats/:loginId — public Spotify stats for any artist
+app.get('/api/spotify/artist-stats/:loginId', authMiddleware, async (req, res) => {
+  try {
+    const pool = await getPool();
+    const result = await pool.request()
+      .input('LoginID', sql.Int, req.params.loginId)
+      .query(`SELECT a.Artist_Spotify_URL FROM ArtistLogins l
+              LEFT JOIN Artists a ON l.Artist_ID = a.Artist_ID
+              WHERE l.Login_ID = @LoginID`);
+    if (!result.recordset.length || !result.recordset[0].Artist_Spotify_URL)
+      return res.json({ connected: false, message: 'No Spotify URL set.' });
+    const artistId = extractSpotifyArtistId(result.recordset[0].Artist_Spotify_URL);
+    if (!artistId) return res.json({ connected: false, message: 'Invalid Spotify URL.' });
+    const token = await getSpotifyClientToken();
+    const [artistRes, tracksRes] = await Promise.all([
+      fetch(`https://api.spotify.com/v1/artists/${artistId}`, {
+        headers: { 'Authorization': 'Bearer ' + token }
+      }),
+      fetch(`https://api.spotify.com/v1/artists/${artistId}/top-tracks?market=US`, {
+        headers: { 'Authorization': 'Bearer ' + token }
+      })
+    ]);
+    if (!artistRes.ok) return res.json({ connected: false, message: 'Artist not found on Spotify.' });
+    const artist = await artistRes.json();
+    const tracks = await tracksRes.json();
+    const markets = tracks.tracks?.[0]?.available_markets || [];
+    res.json({
+      connected:  true,
+      name:       artist.name,
+      followers:  artist.followers?.total || 0,
+      popularity: artist.popularity || 0,
+      genres:     artist.genres || [],
+      image:      artist.images?.[0]?.url || null,
+      markets:    markets.length,
+      topTracks:  (tracks.tracks || []).slice(0, 3).map(t => ({
+        name:       t.name,
+        album:      t.album?.name,
+        popularity: t.popularity,
+        image:      t.album?.images?.[0]?.url
+      }))
+    });
+  } catch (err) {
+    console.error('Artist stats error:', err.message);
+    res.status(500).json({ message: 'Failed to fetch Spotify data.', error: err.message });
+  }
+});
