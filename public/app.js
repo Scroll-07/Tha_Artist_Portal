@@ -216,7 +216,7 @@ function renderStreams(data) {
   if (!data.length) { el.innerHTML = "<p class=no-data>No stream data yet.</p>"; return; }
   el.innerHTML = data.map(s =>
     "<div class=stat-card><div class=platform>" + s.Streaming_Platform + "</div>" +
-    "<div class=stream-count>" + Number(s.Total_Streams).toLocaleString() + "</div>" +
+    "<div class=stream-count>" + Number(s.Stream_Count).toLocaleString() + "</div>" +
     "<div class=stream-label>Total Streams</div></div>"
   ).join("");
 }
