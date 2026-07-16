@@ -11,7 +11,6 @@ const cors     = require('cors');
 const bcrypt   = require('bcrypt');
 const jwt      = require('jsonwebtoken');
 const webpush  = require('web-push');
-const fetch = require('node-fetch');
 
 const { getPool, startKeepAlive } = require('./db/connection');
 const { startScheduler, runNightlyCleanup } = require('./scheduler/jobs');
