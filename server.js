@@ -1399,13 +1399,15 @@ function extractSpotifyArtistId(url) {
 }
 
 // GET /api/spotify/connect — redirect to Spotify login
-app.get('/api/spotify/connect', authMiddleware, (req, res) => {
+app.get('/api/spotify/connect', (req, res) => {
+  const loginId = req.query.loginId;
+  if (!loginId) return res.redirect('/dashboard.html?spotify=error&reason=not_authenticated');
   const params = new URLSearchParams({
     response_type: 'code',
     client_id:     process.env.SPOTIFY_CLIENT_ID,
     scope:         SPOTIFY_SCOPES,
     redirect_uri:  process.env.APP_URL + '/api/auth/spotify/callback',
-    state:         req.artist.loginId.toString()
+    state:         loginId.toString()
   });
   res.redirect('https://accounts.spotify.com/authorize?' + params.toString());
 });

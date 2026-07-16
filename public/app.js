@@ -208,6 +208,8 @@ async function loadDashboard() {
   loadCollabRequests();
   loadNotificationCount();
   showLoginNotifPopup();
+  loadSpotifyData();
+  
 }
 
 // ── Render functions ─────────────────────────────────────────────
@@ -1375,4 +1377,93 @@ async function manualSubscribePush() {
   } catch (err) {
     alert('Subscribe error: ' + err.message);
   }
+}
+
+// ── Spotify Integration ──────────────────────────────────────────
+async function loadSpotifyData() {
+  const token = localStorage.getItem('artistToken');
+  if (!token) return;
+  try {
+    const statusRes = await fetch('/api/spotify/status', { headers: { 'Authorization': token } });
+    const status = await statusRes.json();
+    const connectBtn    = document.getElementById('spotifyConnectBtn');
+    const disconnectBtn = document.getElementById('spotifyDisconnectBtn');
+    if (status.connected) {
+      if (connectBtn)    connectBtn.style.display    = 'none';
+      if (disconnectBtn) disconnectBtn.style.display = 'inline';
+      const myRes  = await fetch('/api/spotify/my-stats', { headers: { 'Authorization': token } });
+      const myData = await myRes.json();
+      if (myData.connected) { renderSpotifyPersonal(myData); return; }
+    }
+    const pubRes  = await fetch('/api/spotify/public-stats', { headers: { 'Authorization': token } });
+    const pubData = await pubRes.json();
+    if (pubData.connected) renderSpotifyPublic(pubData);
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('spotify') === 'connected') {
+      history.replaceState({}, '', '/dashboard.html');
+      loadSpotifyData();
+    }
+  } catch (err) { console.log('Spotify load error:', err.message); }
+}
+
+function renderSpotifyPublic(data) {
+  const el = document.getElementById('spotifyContainer');
+  if (!el) return;
+  el.innerHTML = '<div style="display:flex;align-items:center;gap:16px;margin-bottom:20px;">' +
+    (data.image ? '<img src="' + data.image + '" style="width:72px;height:72px;border-radius:50%;object-fit:cover;"/>' : '') +
+    '<div><div style="color:#eee;font-size:1.1rem;font-weight:bold;">' + data.name + '</div>' +
+    '<div style="color:#1DB954;font-size:0.9rem;">' + Number(data.followers).toLocaleString() + ' followers &bull; Popularity: ' + data.popularity + '/100</div>' +
+    '<div style="color:#666;font-size:0.8rem;">' + (data.genres||[]).slice(0,3).join(', ') + '</div></div></div>' +
+    '<div style="font-size:0.75rem;color:#555;text-transform:uppercase;letter-spacing:1px;margin-bottom:12px;">Top Tracks (Public)</div>' +
+    '<div style="display:flex;flex-direction:column;gap:8px;">' +
+    (data.topTracks||[]).map((t,i) =>
+      '<div style="display:flex;align-items:center;gap:12px;background:#1a1a1a;border-radius:8px;padding:10px 14px;">' +
+      (t.image ? '<img src="' + t.image + '" style="width:40px;height:40px;border-radius:4px;"/>' : '') +
+      '<div style="flex:1;"><div style="color:#eee;font-size:0.9rem;">' + t.name + '</div>' +
+      '<div style="color:#666;font-size:0.78rem;">' + (t.album||'') + '</div></div>' +
+      '<div style="color:#1DB954;font-size:0.8rem;">&#9889; ' + t.popularity + '</div></div>'
+    ).join('') + '</div>' +
+    '<p style="color:#555;font-size:0.75rem;margin-top:12px;">Connect your Spotify account above for personal streaming data.</p>';
+}
+
+function renderSpotifyPersonal(data) {
+  const el = document.getElementById('spotifyContainer');
+  if (!el) return;
+  el.innerHTML = '<div style="font-size:0.75rem;color:#1DB954;text-transform:uppercase;letter-spacing:1px;margin-bottom:12px;">&#10003; Personal Account Connected</div>' +
+    '<div style="font-size:0.75rem;color:#555;text-transform:uppercase;letter-spacing:1px;margin-bottom:10px;">Your Top Tracks This Month</div>' +
+    '<div style="display:flex;flex-direction:column;gap:8px;margin-bottom:20px;">' +
+    (data.topTracks||[]).map((t,i) =>
+      '<div style="display:flex;align-items:center;gap:12px;background:#1a1a1a;border-radius:8px;padding:10px 14px;">' +
+      (t.image ? '<img src="' + t.image + '" style="width:40px;height:40px;border-radius:4px;"/>' : '') +
+      '<div style="flex:1;"><div style="color:#eee;font-size:0.9rem;">' + t.name + '</div>' +
+      '<div style="color:#666;font-size:0.78rem;">' + (t.artist||'') + '</div></div>' +
+      '<div style="color:#D4AF37;font-size:0.75rem;">#' + (i+1) + '</div></div>'
+    ).join('') + '</div>' +
+    '<div style="font-size:0.75rem;color:#555;text-transform:uppercase;letter-spacing:1px;margin-bottom:10px;">Recently Played</div>' +
+    '<div style="display:flex;flex-direction:column;gap:6px;">' +
+    (data.recentTracks||[]).slice(0,5).map(t =>
+      '<div style="display:flex;align-items:center;gap:12px;background:#1a1a1a;border-radius:8px;padding:8px 14px;">' +
+      (t.image ? '<img src="' + t.image + '" style="width:36px;height:36px;border-radius:4px;"/>' : '') +
+      '<div style="flex:1;"><div style="color:#eee;font-size:0.85rem;">' + (t.name||'') + '</div>' +
+      '<div style="color:#666;font-size:0.75rem;">' + (t.artist||'') + '</div></div>' +
+      '<div style="color:#444;font-size:0.7rem;">' + (t.playedAt ? new Date(t.playedAt).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'}) : '') + '</div></div>'
+    ).join('') + '</div>';
+}
+
+function connectSpotify() {
+  const token = localStorage.getItem('artistToken');
+  if (!token) return;
+  const payload = JSON.parse(atob(token.split('.')[1]));
+  window.location.href = '/api/spotify/connect?loginId=' + payload.loginId;
+}
+
+async function disconnectSpotify() {
+  const token = localStorage.getItem('artistToken');
+  if (!confirm('Disconnect your Spotify account?')) return;
+  await fetch('/api/spotify/disconnect', { method: 'DELETE', headers: { 'Authorization': token } });
+  const connectBtn    = document.getElementById('spotifyConnectBtn');
+  const disconnectBtn = document.getElementById('spotifyDisconnectBtn');
+  if (connectBtn)    connectBtn.style.display    = 'inline';
+  if (disconnectBtn) disconnectBtn.style.display = 'none';
+  document.getElementById('spotifyContainer').innerHTML = '<p class="no-data">Spotify disconnected.</p>';
 }
