@@ -11,7 +11,6 @@ const cors     = require('cors');
 const bcrypt   = require('bcrypt');
 const jwt      = require('jsonwebtoken');
 const webpush  = require('web-push');
-const sgMail   = require('@sendgrid/mail');
 
 const { getPool, startKeepAlive } = require('./db/connection');
 const { startScheduler, runNightlyCleanup } = require('./scheduler/jobs');
@@ -23,12 +22,13 @@ app.use(cors());
 app.use(express.json());
 app.use(express.static('public'));
 
-// ── SendGrid setup ────────────────────────────────────────────────
-sgMail.setApiKey(process.env.SENDGRID_API_KEY);
+// ── Resend setup ────────────────────────────────────────────────
+const { Resend } = require('resend');
+const resend = new Resend(process.env.RESEND_API_KEY);
 
 // ── Web Push (VAPID) setup ────────────────────────────────────────
 webpush.setVapidDetails(
-  'mailto:' + process.env.SENDGRID_FROM_EMAIL,
+  'mailto:' + process.env.FROM_EMAIL,
   process.env.VAPID_PUBLIC_KEY,
   process.env.VAPID_PRIVATE_KEY
 );
@@ -49,9 +49,9 @@ function authMiddleware(req, res, next) {
 // ── Email helper ──────────────────────────────────────────────────
 async function sendEmail(to, subject, htmlContent) {
   try {
-    await sgMail.send({
+    await resend.emails.send({
+      from:    process.env.FROM_EMAIL,
       to,
-      from:    process.env.SENDGRID_FROM_EMAIL,
       subject,
       html:    htmlContent
     });
