@@ -1380,7 +1380,7 @@ async function manualSubscribePush() {
 }
 
 // ── Spotify Integration ──────────────────────────────────────────
-async function loadSpotifyData() {
+async function loadSpotifyData_OLD() {
   const token = localStorage.getItem('artistToken');
   if (!token) return;
   try {
@@ -1466,4 +1466,19 @@ async function disconnectSpotify() {
   if (connectBtn)    connectBtn.style.display    = 'inline';
   if (disconnectBtn) disconnectBtn.style.display = 'none';
   document.getElementById('spotifyContainer').innerHTML = '<p class="no-data">Spotify disconnected.</p>';
+}
+
+// ── Simplified Spotify — public stats only ───────────────────────
+async function loadSpotifyData() {
+  const token = localStorage.getItem('artistToken');
+  if (!token) return;
+  try {
+    const res  = await fetch('/api/spotify/public-stats', {
+      headers: { 'Authorization': token }
+    });
+    const data = await res.json();
+    if (data.connected) renderSpotifyPublic(data);
+  } catch (err) {
+    console.log('Spotify load error:', err.message);
+  }
 }
