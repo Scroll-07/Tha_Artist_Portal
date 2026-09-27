@@ -110,7 +110,7 @@ async function registerArtist() {
 
   const payload = {
     role,
-    name,
+    artistName: name,
     email,
     password:     pass,
     phone:        val('regPhone'),
